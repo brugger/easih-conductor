@@ -25,6 +25,8 @@ sub connect {
 }
 
 
+my %sth_hash;
+
 # 
 # 
 # 
@@ -32,7 +34,10 @@ sub connect {
 sub prepare {
   my ($dbi, $sql) = @_;
 
-  my $sth = $dbi->prepare( $sql );
+  return $sth_hash{$sql} if ( $sth_hash{$sql} );
+
+  my $sth = $dbi->prepare( $sql ) || die "Could not prepare '$sql':$DBI::errstr\n";
+  $sth_hash{$sql} = $sth;
 
   return $sth;
 }
@@ -42,7 +47,7 @@ sub prepare {
 # 
 # 
 # Kim Brugger (06 Feb 2012)
-sub fetch {
+sub fetch_array_hash {
   my ($dbi, $sql) = @_;
 
   my $sth = $dbi->prepare( $sql );
@@ -54,7 +59,27 @@ sub fetch {
   }
 
   return @results if ( wantarray );
+  return \@results;
+}
 
+
+# 
+# 
+# 
+# Kim Brugger (06 Feb 2012)
+sub fetch_array_array {
+  my ($dbi, $sql) = @_;
+
+  my $sth = $dbi->prepare( $sql );
+  
+  my @results;
+
+  while (my $result = $sth_fetch_rs->fetchrow_arrayref() ) {
+    push @results, $result;
+  }
+
+  return @results if ( wantarray );
+  return \@results;
 }
 
 
@@ -64,50 +89,47 @@ sub fetch {
 # 
 # Kim Brugger (06 Feb 2012)
 sub insert {
-  my ($hash_ref)  = @_;
+  my ($dbi, $table, $hash_ref)  = @_;
 
-  $$hash_ref{type} = 'organism' if (!$$hash_ref{type});
-  $$hash_ref{"subtype"} = '' if (!$$hash_ref{type});
-
-  my $s = "INSERT INTO organism (name, alias, type, subtype) VALUES ('$$hash_ref{'name'}','$$hash_ref{'alias'}', '$$hash_ref{'type'}', '$$hash
-_ref{'subtype'}')\n";
-#  print STDERR "organism::save::$s\n";
-  my $sth = $db::dbh->prepare($s);
-
+  my (@keys, @values);
+  foreach my $key (keys %$hash_ref ) {
+    push @keys, "$key";
+    push @values, "'$$hash_ref{ $key }'";
+  }
   
+  my $query = "INSERT INTO table (" .join(",", @keys) .") VALUES (".join(",", @values).");";
+
+  my $sth = prepare( $query );
+
   $sth->execute || die $DBI::errstr;
   
-  # returns the oid of the organism created.
+  # returns the primary key (if exists).
   return $sth->{mysql_insertid};
 }
 
 
 
-}
-
-
-
 sub update {
-  my ($hash_ref)  = @_;
+  my ($dbi, $table, $hash_ref, $condition)  = @_;
 
 
-  my $s = "UPDATE organism SET ";
+  my $s = "UPDATE table SET ";
 
   my @parts;
   # Build the rest of the sql here ...
   foreach my $key (keys %{$hash_ref}) {
     # one should not meddle with the id's since it ruins the system
-    next if ($key eq 'oid');
-    push @parts, "$key = ".$db::dbh->quote($$hash_ref{$key});
+    next if ($key eq '$condition');
+    push @parts, "$key = '$$hash_ref{$key}'";
   }
 
   # collect and make sure we update the right table.
-  $s .= join (', ', @parts) ." WHERE oid ='$$hash_ref{'oid'}'";
+  $s .= join (', ', @parts) ." WHERE $condition ='$$hash_ref{ $condition }'";
 
   my $sth = $db::dbh->prepare($s);
   $sth->execute  || die $DBI::errstr;;
 
-  return $$hash_ref{'oid'};
+  return $$hash_ref{$condition};
 }
 
 
