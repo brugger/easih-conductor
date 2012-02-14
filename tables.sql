@@ -1,3 +1,4 @@
+
 #DROP TABLE project;
 #DROP TABLE sample;
 #DROP TABLE file;
@@ -16,7 +17,7 @@
 CREATE TABLE project (
 
   pid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name                VARCHAR(3) NOT NULL ,
+  name                VARCHAR(3) NOT NULL UNIQUE,
 
   KEY name_idx (name)
 
@@ -28,7 +29,8 @@ CREATE TABLE sample (
 
   sid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   pid                 INT NOT NULL,
-  name                VARCHAR(8) NOT NULL ,
+  name                VARCHAR(8) NOT NULL  UNIQUE,
+  VCF_header	      TEXT,
 
   KEY name_idx (name),
   KEY pid_idx  (pid)
@@ -41,13 +43,13 @@ CREATE TABLE variation (
   pos		     INT,
   ref		     VARCHAR(100),
   alt		     VARCHAR(100),
-  score		     float,
+  status	     ENUM('unannotated', 'analysis','done'),
 
   KEY chr_pos_idx (chr, pos)
 );
 
-CREATE TABLE annotations (
-  vid                INT NOT NULL PRIMARY KEY,  
+CREATE TABLE annotation (
+  vid                INT NOT NULL,  
   gene               VARCHAR(20),
   transcript         VARCHAR(20),
   effect             VARCHAR(20),
@@ -62,6 +64,7 @@ CREATE TABLE annotations (
   condel	     VARCHAR(20),
   GERP		     VARCHAR(20),
  
+  KEY vid_idx (vid),
   KEY gene_idx (gene),
   KEY trans_idx (transcript)
 );

@@ -51,12 +51,42 @@ while (<>) {
   chomp;
 
   my @fields = split("\t", $_);
-  my ($chr, $change, $flags, $filter, $score, $depth, $genotype, $gene, $transcript, $effect, $codon_change, $AA_change, $grantham, $dbsnp, $dbsnp_flags, $HGMD, $pfam, $PolyPhen, $SIFT, $condel, $GERP) = @fields;
+  my ($chr, $change, $filter, $score, $depth, $genotype, $gene, $transcript, $effect, $codon_pos, $AA_change, $grantham_score, $dbsnp, $dbsnp_flags, $HGMD, $pfam, $PolyPhen, $SIFT, $condel, $GERP) = @fields;
   ($chr, my $pos) = split(":", $chr);
   my ($ref, $alt) = split(">", $change);
-  EASIH::VCFdb::insert_variation($chr, $pos, $ref, $alt);
+  my $vid = EASIH::VCFdb::insert_variation($chr, $pos, $ref, $alt);
 #  EASIH::VCFdb::insert_variation($chr, $pos, $ref, $alt);
 
+  print "filter => $filter, depth => $depth\n";
   
-#  exit;
+  my %call_hash = (sid    => $sid,
+		   vid    => $vid,
+		   filter => $filter,
+		   score  => $score,
+		   depth  => $depth,
+		   allele_freq => $genotype eq "HOMO" ? 1:2 ,
+		   allele_count => $genotype eq "HOMO" ? 1:2);
+
+#  die Dumper( \%call_hash );
+
+  EASIH::VCFdb::insert_sample_data(\%call_hash);
+
+  %call_hash = ( vid            => $vid,
+		 gene           => $gene, 
+		 transcript     => $transcript, 
+		 effect         => $effect, 
+		 codon_pos      =>$codon_pos, 
+		 AA_change      => $AA_change, 
+		 grantham_score => $grantham_score, 
+		 dbsnp          => $dbsnp, 
+		 HGMD           => $HGMD, 
+		 pfam           => $pfam, 
+		 PolyPhen       => $PolyPhen, 
+		 SIFT           => $SIFT, 
+		 condel         => $condel, 
+		 GERP           =>$GERP);
+
+#  die Dumper( \%call_hash );
+
+  EASIH::VCFdb::insert_annotation( \%call_hash );
 }

@@ -16,10 +16,11 @@ use DBI;
 # 
 # Kim Brugger (06 Feb 2012)
 sub connect {
-  my ($dbname, $dbhost) = @_;
-  $dbhost ||= "mgpc17";
+  my ($dbname, $dbhost, $db_user, $db_pass) = @_;
+  $dbhost  ||= "mgpc17";
+  $db_user ||= 'easih_ro';
 
-  my $dbi = DBI->connect("DBI:mysql:$dbname:$dbhost", 'easih_ro') || die "Could not connect to database: $DBI::errstr";
+  my $dbi = DBI->connect("DBI:mysql:$dbname:$dbhost", $db_user, $db_pass) || die "Could not connect to database: $DBI::errstr";
 
   return $dbi;
 }
@@ -48,13 +49,16 @@ sub prepare {
 # 
 # Kim Brugger (06 Feb 2012)
 sub fetch_array_hash {
-  my ($dbi, $sql) = @_;
+  my ($dbi, $sql, @params) = @_;
 
-  my $sth = $dbi->prepare( $sql );
+  my $sth = $sql if ( $sql->isa("DBI::st"));
+  $sth = $dbi->prepare( $sql ) if ( !$sth );
   
   my @results;
 
-  while (my $result = $sth_fetch_rs->fetchrow_hashref() ) {
+  $sth->execute( @params );
+ 
+  while (my $result = $sth->fetchrow_hashref() ) {
     push @results, $result;
   }
 
@@ -68,18 +72,61 @@ sub fetch_array_hash {
 # 
 # Kim Brugger (06 Feb 2012)
 sub fetch_array_array {
-  my ($dbi, $sql) = @_;
+  my ($dbi, $sql, @params) = @_;
 
-  my $sth = $dbi->prepare( $sql );
+  my $sth = $sql if ( $sql->isa("DBI::st"));
+  $sth = $dbi->prepare( $sql ) if ( !$sth );
   
   my @results;
 
-  while (my $result = $sth_fetch_rs->fetchrow_arrayref() ) {
-    push @results, $result;
+  $sth->execute( @params );
+
+  while (my @result_array = $sth->fetchrow_array() ) {
+    push @results, \@result_array;
   }
 
   return @results if ( wantarray );
   return \@results;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Feb 2012)
+sub fetch_array {
+  my ($dbi, $sql, @params) = @_;
+
+  my $sth = $sql if ( $sql->isa("DBI::st"));
+  $sth = $dbi->prepare( $sql ) if ( !$sth );
+
+  $sth->execute( @params );
+  
+  my @results = $sth->fetchrow_array();
+
+  return @results if ( wantarray );
+  return \@results;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Feb 2012)
+sub fetch_hash {
+  my ($dbi, $sql, @params) = @_;
+
+  my $sth = $sql if ( $sql->isa("DBI::st"));
+  $sth = $dbi->prepare( $sql ) if ( !$sth );
+  
+  $sth->execute( @params );
+
+  my $result = $sth->fetchrow_hashref();
+  
+  return $result;
+  
+  return %$result if ( wantarray );
+  return $result;
 }
 
 
@@ -91,17 +138,17 @@ sub fetch_array_array {
 sub insert {
   my ($dbi, $table, $hash_ref)  = @_;
 
-  my (@keys, @values);
+  my (@keys, @params, @values);
   foreach my $key (keys %$hash_ref ) {
     push @keys, "$key";
-    push @values, "'$$hash_ref{ $key }'";
+    push @params, "?";
+    push @values, "$$hash_ref{ $key }";
   }
   
-  my $query = "INSERT INTO table (" .join(",", @keys) .") VALUES (".join(",", @values).");";
+  my $query = "INSERT INTO $table (" .join(",", @keys) .") VALUES (".join(",", @params).")";
+  my $sth = prepare($dbi, $query);
 
-  my $sth = prepare( $query );
-
-  $sth->execute || die $DBI::errstr;
+  $sth->execute(@values) || die $DBI::errstr;
   
   # returns the primary key (if exists).
   return $sth->{mysql_insertid};
@@ -110,26 +157,25 @@ sub insert {
 
 
 sub update {
-  my ($dbi, $table, $hash_ref, $condition)  = @_;
+  my ($dbi, $table, $hash_ref, $condition_key)  = @_;
 
-
-  my $s = "UPDATE table SET ";
+  my $s = "UPDATE $table SET ";
 
   my @parts;
   # Build the rest of the sql here ...
   foreach my $key (keys %{$hash_ref}) {
     # one should not meddle with the id's since it ruins the system
-    next if ($key eq '$condition');
+    next if ($key eq $condition_key);
     push @parts, "$key = '$$hash_ref{$key}'";
   }
 
   # collect and make sure we update the right table.
-  $s .= join (', ', @parts) ." WHERE $condition ='$$hash_ref{ $condition }'";
+  $s .= join (' AND ', @parts) ." WHERE $condition_key ='$$hash_ref{ $condition_key }'";
 
-  my $sth = $db::dbh->prepare($s);
+  my $sth = $dbi->prepare($s);
   $sth->execute  || die $DBI::errstr;;
 
-  return $$hash_ref{$condition};
+  return $$hash_ref{$condition_key};
 }
 
 
