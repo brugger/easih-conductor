@@ -11,6 +11,51 @@ use Data::Dumper;
 
 use DBI;
 
+
+
+# 
+# 
+# 
+# Kim Brugger (16 Feb 2012)
+sub create_db {
+  my ($dbname, $dbhost, $db_user, $db_pass) = @_;
+  my $drh = DBI->install_driver("mysql");
+  my $rc = $drh->func('createdb', $dbname, $dbhost, $db_user, $db_pass, 'admin');
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (16 Feb 2012)
+sub drop_db {
+  my ($dbname, $dbhost, $db_user, $db_pass) = @_;
+  my $drh = DBI->install_driver("mysql");
+  my $rc = $drh->func('dropdb', $dbname, $dbhost, $db_user, $db_pass, 'admin');
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (16 Feb 2012)
+sub sql_file {
+  my ($dbi, $infile) = @_;
+
+  open( my $in, $infile) || die "Could not open '$infile': $!\n";
+  my @statements = split(";", join("", <$in>));
+  close( $in );
+  
+  foreach my $statement ( @statements ) {
+    $statement =~ s/\s+//;
+    next if ( ! $statement );
+    $dbi->do( "$statement;" );
+  }
+
+}
+
+
+
 # 
 # 
 # 
@@ -140,6 +185,7 @@ sub insert {
 
   my (@keys, @params, @values);
   foreach my $key (keys %$hash_ref ) {
+#    print "$key -- $$hash_ref{ $key }\n";
     push @keys, "$key";
     push @params, "?";
     push @values, "$$hash_ref{ $key }";
@@ -150,8 +196,8 @@ sub insert {
 
   $sth->execute(@values) || die $DBI::errstr;
   
-  # returns the primary key (if exists).
-  return $sth->{mysql_insertid};
+  # returns the primary key (if exists), otherwise -1.
+  return $sth->{mysql_insertid} || -1;
 }
 
 
