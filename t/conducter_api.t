@@ -40,26 +40,28 @@ use lib '/home/kb468/projects/VCFdb/modules';
 use lib '/home/kb468/projects/conductor/modules';
 
 
-use EASIH::Misc;
-my $rand_dbname = EASIH::Misc::random_string(20);
-#$rand_dbname = "test";
+#use EASIH::Misc;
+#my $rand_dbname = EASIH::Misc::random_string(20);
+my $rand_dbname = "test";
 print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::Conductor;
 
 use Test::Simple tests => 14;
 
+my $dbhost = 'localhost';
+
 # Create a random dbase that we can play with...
-EASIH::DB::create_db($rand_dbname, "mgpc17", "easih_admin", "easih");
-my $dbi_DB = EASIH::DB::connect($rand_dbname, "mgpc17", "easih_admin", "easih");
-if (-e "tables.sql") {
-  EASIH::DB::sql_file($dbi_DB, "tables.sql");
+EASIH::DB::create_db($rand_dbname, $dbhost, "easih_admin", "easih");
+my $dbi_DB = EASIH::DB::connect($rand_dbname, $dbhost, "easih_admin", "easih");
+if (-e "sql/conductor.sql") {
+  EASIH::DB::sql_file($dbi_DB, "sql/conductor.sql");
 }
-elsif (-e "../tables.sql") {
-  EASIH::DB::sql_file($dbi_DB, "../tables.sql");
+elsif (-e "../sql/conductor.sql") {
+  EASIH::DB::sql_file($dbi_DB, "../sql/conductor.sql");
 }
 
-my $dbi = EASIH::Conductor::connect($rand_dbname, "mgpc17", "easih_admin", "easih");
+my $dbi = EASIH::Conductor::connect($rand_dbname, $dbhost, "easih_admin", "easih");
 
 ok( $dbi, 'Created and Connect to test database');
 
@@ -116,5 +118,5 @@ ok($statuses && $$statuses[0][1] eq "OFFLOADED", "Fetched statuses for sample");
 
 # Delete the tmp database now when we are done with it.
 END {
-  EASIH::DB::drop_db($rand_dbname, "mgpc17", "easih_admin", "easih");
+  EASIH::DB::drop_db($rand_dbname, $dbhost, "easih_admin", "easih");
 }
