@@ -114,13 +114,14 @@ sub fetch_sample_name {
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_sample {
-  my ($pid, $name) = @_;
+  my ($pid, $name, $VCF_header) = @_;
 
   my $sid = fetch_sample_id($name);
   return $sid if ( $sid );
 
-  my %call_hash = ( pid => $pid,
-		    name => $name);
+  my %call_hash = ( pid        => $pid,
+		    name       => $name,
+		    VCF_header => $VCF_header);
 
   return (EASIH::DB::insert($dbi, "sample", \%call_hash));
 }
@@ -130,11 +131,12 @@ sub insert_sample {
 # 
 # Kim Brugger (07 Feb 2012)
 sub update_sample {
-  my ($sid, $name) = @_;
+  my ($sid, $name, $VCF_header) = @_;
 
   my %call_hash;
-  $call_hash{sid}    = $sid  if ($sid);
-  $call_hash{name}   = $name if ($name);
+  $call_hash{sid}        = $sid  if ($sid);
+  $call_hash{name}       = $name if ($name);
+  $call_hash{VCF_header} = $VCF_header if ($VCF_header);
 
   return (EASIH::DB::update($dbi, "sample", \%call_hash, "sid"));
 }
@@ -194,12 +196,12 @@ sub update_variation {
   my ($vid, $chr, $pos, $ref, $alt, $status) = @_;
 
   my %call_hash;
-  $call_hash{vid}    = $chr if ($vid);
-  $call_hash{chr}    = $chr if ($chr);
-  $call_hash{pos}    = $chr if ($pos);
-  $call_hash{ref}    = $chr if ($ref);
-  $call_hash{alt}    = $chr if ($alt);
-  $call_hash{status} = $chr if ($status);
+  $call_hash{vid}    = $vid    if ($vid);
+  $call_hash{chr}    = $chr    if ($chr);
+  $call_hash{pos}    = $pos    if ($pos);
+  $call_hash{ref}    = $ref    if ($ref);
+  $call_hash{alt}    = $alt    if ($alt);
+  $call_hash{status} = $status if ($status);
 
   return (EASIH::DB::update($dbi, "variation", \%call_hash, "vid"));
 }
@@ -218,7 +220,7 @@ sub insert_annotation {
     next if ( ! $$call_hash{ $key } );
 
     if ( ! grep($key, [ "vid", "gene", "transcript", "effect", "codon_pos",
-			"AA_change", "grantham_score", "dbsnp", "HGMD", "pfam",
+			"AA_change", "grantham_score", "pfam",
 			"PolyPhen", "SIFT", "condel", "GERP"])) {
       print "$key ($$call_hash{$key}) is not present in the annotation table\n";
       die Dumper( $call_hash );
@@ -254,8 +256,8 @@ sub insert_sample_data {
   foreach my $key (keys %$call_hash) {
 
     next if ( ! $$call_hash{ $key } );
-    if ( ! grep($key, [ "sid", "vid", "filter", "score", "depth", "allele_freq",
-			"allele_count"])) {
+    if ( ! grep($key, [ "sid", "vid", "filter", "score", "depth", "format_keys",
+			"format_values"])) {
       print "$key is not present in the annotation table\n";
       die Dumper( $call_hash );
       return -1;
