@@ -1,4 +1,4 @@
-package EASIH::VCFdb;
+package EASIH::Conductor;
 # 
 # 
 # 
@@ -116,6 +116,13 @@ sub fetch_sample_name {
 sub insert_sample {
   my ($pid, $name) = @_;
 
+  my $sample_name = fetch_project_name($pid);
+  
+  if (! $sample_name ) {
+    print STDERR "Unknown pid: $pid\n";
+    return undef;
+  }
+
   my $sid = fetch_sample_id($name);
   return $sid if ( $sid );
 
@@ -140,15 +147,29 @@ sub update_sample {
 }
 
 
+
 # 
 # 
 # 
 # Kim Brugger (07 Feb 2012)
-sub fetch_analysis_by_ref_pipeline {
-  my ( $ref, $pipeline ) = @_;
-  my $q    = "SELECT * FROM analysis where ref = ? AND pipeline = ?";
+sub fetch_analysis_id {
+  my ( $reference, $pipeline ) = @_;
+  my $q    = "SELECT aid FROM analysis where reference = ? AND pipeline = ?";
   my $sth  = EASIH::DB::prepare($dbi, $q);
-  return ( EASIH::DB::fetch_array( $dbi, $sth, $ref, $pipeline ) );
+  my @line = EASIH::DB::fetch_array( $dbi, $sth, $reference, $pipeline );
+  return $line[0] || undef;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub fetch_analysis {
+  my ( $aid ) = @_;
+  my $q    = "SELECT * FROM analysis where aid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return ( EASIH::DB::fetch_hash( $dbi, $sth, $aid ) );
 }
 
 
@@ -157,33 +178,16 @@ sub fetch_analysis_by_ref_pipeline {
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_analysis {
-  my ($ref, $pipeline) = @_;
+  my ($reference, $pipeline) = @_;
 
-  my @vars = fetch_analysis_by_ref_pipeline($chr, $pos);
-  return $vars[0] if ( @vars );
+  my @vars = fetch_analysis_id($reference, $pipeline);
+  return $vars[0] if ( @vars && $vars[0]);
 
-  my %call_hash = ( ref      => $ref,
-		    pipeline => $pipeline);
+  my %call_hash = ( reference  => $reference,
+		    pipeline   => $pipeline);
 
   return (EASIH::DB::insert($dbi, "analysis", \%call_hash));
 }
-
-# 
-# Should validate if an entry already exists.
-# 
-# Kim Brugger (07 Feb 2012)
-sub update_variation {
-  my ($aid, $ref, $pipeline) = @_;
-
-  my %call_hash;
-  $call_hash{aid}      = $aid if ($aid);
-  $call_hash{ref}      = $chr if ($ref);
-  $call_hash{pipeline} = $chr if ($pipeline);
-
-  return (EASIH::DB::update($dbi, "analysis", \%call_hash, "aid"));
-}
-
-
 
 
 # 
@@ -191,17 +195,42 @@ sub update_variation {
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_status {
-  my ($pid, $status) = @_;
+  my ($sid, $status) = @_;
+
+  my $sample_name = fetch_sample_name($sid);
+  
+  if (! $sample_name ) {
+    print STDERR "Unknown sid: $sid\n";
+    return undef;
+  }
 
 
-  my $timestamp = Time::HiRes::gettimeofday()*100000;
+  my $stamp = Time::HiRes::gettimeofday()*100000;
 
-  my %call_hash = ( pid    => $pid,
+  my %call_hash = ( sid    => $sid,
 		    status => $status,
-		    stamp  => $timestamp);
+		    stamp  => $stamp);
 
   return (EASIH::DB::insert($dbi, "status", \%call_hash));
 }
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub fetch_statuses {
+  my ( $sid ) = @_;
+  my $q    = "SELECT * FROM status where sid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @statuses = EASIH::DB::fetch_array_array( $dbi, $sth, $sid );
+  
+  @statuses = sort {$$b[2] <=> $$a[2]} @statuses;
+
+  return @statuses if ( wantarray );
+  return \@statuses;
+}
+
 
 
 1;

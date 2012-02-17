@@ -42,7 +42,7 @@ use lib '/home/kb468/projects/conductor/modules';
 
 use EASIH::Misc;
 my $rand_dbname = EASIH::Misc::random_string(20);
-$rand_dbname = "test";
+#$rand_dbname = "test";
 print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::Conductor;
