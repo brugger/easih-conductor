@@ -9,60 +9,77 @@ use strict;
 use warnings;
 use Data::Dumper;
 
+use Test::Simple tests => 16;
 
-# Sets up dynamic paths for EASIH modules...
-# Makes it possible to work with multiple checkouts without setting 
-# perllib/perl5lib in the enviroment.
-BEGIN {
-  my $DYNAMIC_LIB_PATHS = 1;
-  if ( $DYNAMIC_LIB_PATHS ) {
-    my $path = $0;
-    
-    if ($path =~ /.*\//) {
-      $path =~ s/(.*)\/.*/$1/;
-      push @INC, "$path/modules" if ( -e "$path/modules");
-      $path =~ s/(.*)\/.*/$1/;
-      push @INC, "$path/modules" if ( -e "$path/modules" && ! grep /^$path\/modules/, @INC);
-    }
-    else {
-      push @INC, "../modules" if ( -e "../modules");
-      push @INC, "./modules" if ( -e "./modules");
-    }
-  }
-  else {
-    push @INC, '/home/kb468/easih-toolbox/modules/';
-  }
+use lib '/home/kb468/easih-toolbox/modules/';
+use lib '/home/kb468/projects/conductor/modules';
 
+
+#use EASIH::Misc;
+#my $rand_dbname = EASIH::Misc::random_string(20);
+my $rand_dbname = "test";
+print "Database name :: $rand_dbname\n";
+use EASIH::DB;
+
+my $dbhost = 'localhost';
+
+# Create a random dbase that we can play with...
+EASIH::DB::create_db($rand_dbname, $dbhost, "easih_admin", "easih");
+my $dbi = EASIH::DB::connect($rand_dbname, $dbhost, "easih_admin", "easih");
+if (-e "sql/db.sql") {
+  EASIH::DB::sql_file($dbi, "sql/db.sql");
+}
+elsif (-e "../sql/db.sql") {
+  EASIH::DB::sql_file($dbi, "../sql/db.sql");
 }
 
 
-use Test::Simple tests => 4;
-use EASIH::DB;
+ok( $dbi, 'Created and Connect to test database');
 
-my $dbi = EASIH::DB::connect("done", "mgpc17", "easih_admin", "easih");
-ok( $dbi, 'Connect to exsisting database' );
-my $sth = EASIH::DB::prepare($dbi, "select * from sample where name like ?");
+my $id1 = EASIH::DB::insert($dbi, "test", {string => "Entry 1"});
+ok($id1 , 'Insert into table w/ primary key' );
+my $id2 = EASIH::DB::insert($dbi, "test", {string => "Entry 2"});
+$id2 = EASIH::DB::update($dbi, "test", {string => "Entry 2", id => $id2}, "id");
+ok($id2 , 'Update record in table w/ primary key' );
+
+my $id3 = EASIH::DB::insert($dbi, "test2", {string => "Entry 2", id=>10});
+ok($id3 == -1 , 'Insert into table wo/ primary key' );
+$id3 = EASIH::DB::update($dbi, "test2", {string => "Entry 2", id => $id3}, "id");
+ok($id3 == -1 , 'Update record in table wo/ primary key' );
+
+$id3 = EASIH::DB::insert($dbi, "test2", {strings => "Entry 2", ids=>10});
+ok(! defined $id3, 'Insert into table w/ wrong column name' );
+$id3 = EASIH::DB::update($dbi, "test2", {strings => "Entry 2", ids => $id3}, "id");
+ok(! defined $id3, 'Update record in table w/ wrong column name' );
+
+my $sth = EASIH::DB::prepare($dbi, "select * from test where id = ?");
 ok($sth , 'Prepare a sql statement' );
 
-my $array_hash = EASIH::DB::fetch_array_hash($dbi, $sth, 'A0%');
-ok(ref($array_hash) eq "ARRAY" && ref($$array_hash[0]) eq "HASH" , 'fetch_array_hash returns correct types' );
+my $array_ref = EASIH::DB::fetch_array($dbi, $sth, $id1);
+ok(ref($array_ref) eq "ARRAY", 'ref fetch_array returns correct types' );
 
-my $array_array = EASIH::DB::fetch_array_array($dbi, $sth, 'A0%');
-ok(ref($array_array) eq "ARRAY" && ref($$array_array[0]) eq "ARRAY" , 'fetch_array_array returns correct types' );
+my @array = EASIH::DB::fetch_array($dbi, $sth, $id1);
+ok(@array && $array[0], 'fetch_array returns correct types' );
 
-$dbi = EASIH::DB::connect("test", "mgpc17", "easih_admin", "easih");
+my $hash_ref = EASIH::DB::fetch_hash($dbi, $sth, $id1);
+ok(ref($hash_ref) eq "HASH" , 'ref fetch_hash returns correct types' );
 
+my %hash = EASIH::DB::fetch_hash($dbi, $sth, $id1);
+ok(%hash && $hash{id}, 'fetch_hash returns correct types' );
 
-__END__
+my $array_array_ref = EASIH::DB::fetch_array_array($dbi, $sth, $id1);
+ok(ref($array_array_ref) eq "ARRAY" && ref($$array_array_ref[0]) eq "ARRAY" , 'ref fetch_array_array returns correct types' );
 
-my %insert_hash = (a => 100,
-		   b => "Loooooooooooooooooooong Value 1",
-		   c => "V2");
+my @array_array = EASIH::DB::fetch_array_array($dbi, $sth, $id1);
+ok(@array_array && ref($array_array[0]) eq "ARRAY" , 'ref fetch_array_array returns correct types' );
 
-EASIH::DB::insert($dbi, "tyt", \%insert_hash);
+my $array_hash_ref = EASIH::DB::fetch_array_hash($dbi, $sth, $id1);
+ok(ref($array_hash_ref) eq "ARRAY" && ref($$array_hash_ref[0]) eq "HASH" , 'ref fetch_array_hash returns correct types' );
 
-$insert_hash{b} = "updated long value, it was to long"; 
-EASIH::DB::update($dbi, "tyt", \%insert_hash, "a");
+my @array_hash = EASIH::DB::fetch_array_hash($dbi, $sth, $id1);
+ok(@array_hash && ref($array_hash[0]) eq "HASH" , 'fetch_array_hash returns correct types' );
 
-print "Did we get here?\n";
-
+# Delete the tmp database now when we are done with it.
+END {
+  EASIH::DB::drop_db($rand_dbname, $dbhost, "easih_admin", "easih");
+}

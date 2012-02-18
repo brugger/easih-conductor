@@ -11,6 +11,9 @@ use Data::Dumper;
 
 use DBI;
 
+# for caching table column names and queries
+my %table_columns;
+my %sth_hash;
 
 
 # 
@@ -51,7 +54,6 @@ sub sql_file {
     next if ( ! $statement );
     $dbi->do( "$statement;" );
   }
-
 }
 
 
@@ -71,7 +73,6 @@ sub connect {
 }
 
 
-my %sth_hash;
 
 # 
 # 
@@ -167,13 +168,30 @@ sub fetch_hash {
   $sth->execute( @params );
 
   my $result = $sth->fetchrow_hashref();
-  
-  return $result;
-  
-  return %$result if ( wantarray );
+
+  return %$result if ( defined $result && wantarray );
   return $result;
 }
 
+
+
+
+# 
+# 
+# 
+# Kim Brugger (18 Feb 2012)
+sub  get_column_names {
+  my ( $dbi, $table ) = @_;
+
+  return @{$table_columns{$table}} if ( $table_columns{$table});
+
+  my $sth = prepare($dbi, "select * from $table where 1=0");
+  my $res = $sth->execute(  );
+  my @names = @{$sth->{NAME}};
+  $table_columns{$table} = \@names;
+
+  return @{$table_columns{$table}};
+}
 
 
 # 
@@ -183,9 +201,16 @@ sub fetch_hash {
 sub insert {
   my ($dbi, $table, $hash_ref)  = @_;
 
+  my %columns;
+  map { $columns{$_} = 1 }get_column_names( $dbi, $table);
+
   my (@keys, @params, @values);
   foreach my $key (keys %$hash_ref ) {
-#    print "$key -- $$hash_ref{ $key }\n";
+    
+    if ( ! $columns{$key}) {
+      print "Column name '$key' is not present in the '$table' table\n";
+      return undef;
+    }
     push @keys, "$key";
     push @params, "?";
     push @values, "$$hash_ref{ $key }";
@@ -193,10 +218,9 @@ sub insert {
   
   my $query = "INSERT INTO $table (" .join(",", @keys) .") VALUES (".join(",", @params).")";
   my $sth = prepare($dbi, $query);
-
+  
   $sth->execute(@values) || die $DBI::errstr;
   
-  # returns the primary key (if exists), otherwise -1.
   return $sth->{mysql_insertid} || -1;
 }
 
@@ -205,11 +229,18 @@ sub insert {
 sub update {
   my ($dbi, $table, $hash_ref, $condition_key)  = @_;
 
+  my %columns;
+  map { $columns{$_} = 1 }get_column_names( $dbi, $table);
+
   my $s = "UPDATE $table SET ";
 
   my @parts;
   # Build the rest of the sql here ...
   foreach my $key (keys %{$hash_ref}) {
+    if ( ! $columns{$key}) {
+      print "Column name '$key' is not present in the '$table' table\n";
+      return undef;
+    }
     # one should not meddle with the id's since it ruins the system
     next if ($key eq $condition_key);
     push @parts, "$key = '$$hash_ref{$key}'";
@@ -221,7 +252,7 @@ sub update {
   my $sth = $dbi->prepare($s);
   $sth->execute  || die $DBI::errstr;;
 
-  return $$hash_ref{$condition_key};
+  return $$hash_ref{$condition_key} || -1;
 }
 
 
