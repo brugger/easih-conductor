@@ -9,7 +9,6 @@ use strict;
 use warnings;
 use Data::Dumper;
 
-
 # Sets up dynamic paths for EASIH modules...
 # Makes it possible to work with multiple checkouts without setting 
 # perllib/perl5lib in the enviroment.
@@ -36,7 +35,6 @@ BEGIN {
 }
 
 use lib '/home/kb468/easih-toolbox/modules/';
-use lib '/home/kb468/projects/VCFdb/modules';
 use lib '/home/kb468/projects/conductor/modules';
 
 
@@ -47,7 +45,7 @@ print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::Conductor;
 
-use Test::Simple tests => 14;
+use Test::Simple tests => 16;
 
 my $dbhost = 'localhost';
 
