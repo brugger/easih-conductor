@@ -24,7 +24,6 @@ CREATE TABLE project (
 );
 
 
-
 CREATE TABLE sample (
 
   sid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
