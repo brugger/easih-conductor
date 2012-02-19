@@ -110,11 +110,17 @@ sub fetch_sample_name {
 
 
 # 
-# Should validate that the sample_id (sid) matches the project_id (pid)
+# 
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_sample {
   my ($pid, $name, $VCF_header) = @_;
+
+  my $sample_name = fetch_project_name($pid);
+  if (! $sample_name ) {
+    print STDERR "Unknown pid: $pid\n";
+    return undef;
+  }
 
   my $sid = fetch_sample_id($name);
   return $sid if ( $sid );
@@ -215,19 +221,6 @@ sub update_variation {
 sub insert_annotation {
   my ( $call_hash ) = @_;
 
-  foreach my $key (keys %$call_hash) {
-
-    next if ( ! $$call_hash{ $key } );
-
-    if ( ! grep($key, [ "vid", "gene", "transcript", "effect", "codon_pos",
-			"AA_change", "grantham_score", "pfam",
-			"PolyPhen", "SIFT", "condel", "GERP"])) {
-      print "$key ($$call_hash{$key}) is not present in the annotation table\n";
-      die Dumper( $call_hash );
-      return -1;
-    }
-  }
-
   return (EASIH::DB::insert($dbi, "annotation", $call_hash));
 }
 
@@ -253,17 +246,6 @@ sub fetch_annotation {
 sub insert_sample_data {
   my ( $call_hash ) = @_;
 
-  foreach my $key (keys %$call_hash) {
-
-    next if ( ! $$call_hash{ $key } );
-    if ( ! grep($key, [ "sid", "vid", "filter", "score", "depth", "format_keys",
-			"format_values"])) {
-      print "$key is not present in the annotation table\n";
-      die Dumper( $call_hash );
-      return -1;
-    }
-  }
-
   return (EASIH::DB::insert($dbi, "sample_data", $call_hash));
 }
 
@@ -278,11 +260,6 @@ sub fetch_sample_data {
   my $sth  = EASIH::DB::prepare($dbi, $q);
   return(EASIH::DB::fetch_hash( $dbi, $sth, $sid, $vid ));
 }
-
-
-
-
-
 
 
 1;
