@@ -211,9 +211,11 @@ sub insert {
       print "Column name '$key' is not present in the '$table' table\n";
       return undef;
     }
-    push @keys, "$key";
-    push @params, "?";
-    push @values, "$$hash_ref{ $key }";
+    if ( $$hash_ref{ $key } ) {
+      push @keys, "$key";
+      push @params, "?";
+      push @values, "$$hash_ref{ $key }";
+    }
   }
   
   my $query = "INSERT INTO $table (" .join(",", @keys) .") VALUES (".join(",", @params).")";
@@ -247,7 +249,7 @@ sub update {
   }
 
   # collect and make sure we update the right table.
-  $s .= join (' AND ', @parts) ." WHERE $condition_key ='$$hash_ref{ $condition_key }'";
+  $s .= join (', ', @parts) ." WHERE $condition_key ='$$hash_ref{ $condition_key }'";
 
   my $sth = $dbi->prepare($s);
   $sth->execute  || die $DBI::errstr;;
