@@ -85,7 +85,7 @@ $sid = EASIH::Conductor::insert_sample($pid, "a990001");
 ok($sid, "Inserted a990001 into sample");
 
 $sid = EASIH::Conductor::update_sample($sid, "A990001");
-ok($pid, 'Updated a990001 to A990001 in sample');
+ok($sid, 'Updated a990001 to A990001 in sample');
 
 my $fetched_sid = EASIH::Conductor::fetch_sample_id("A990001");
 ok($fetched_sid == $sid, 'Fetched sid for A990001 is correct');
