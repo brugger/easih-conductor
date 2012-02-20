@@ -61,6 +61,11 @@ sub fetch_project_name {
 sub insert_project {
   my ($name) = @_;
 
+  if ( !$name ) {
+    print STDERR "parameter missing in the function call\n";
+    return undef;
+  }
+
   my $pid = fetch_project_id($name);
   return $pid if ($pid);
 
@@ -116,6 +121,13 @@ sub fetch_sample_name {
 sub insert_sample {
   my ($pid, $name, $VCF_header) = @_;
 
+
+  if ( !$pid || !$name ||! $VCF_header ) {
+    print STDERR "parameter missing in the function call\n";
+    return undef;
+  }
+
+
   my $sample_name = fetch_project_name($pid);
   if (! $sample_name ) {
     print STDERR "Unknown pid: $pid\n";
@@ -124,6 +136,8 @@ sub insert_sample {
 
   my $sid = fetch_sample_id($name);
   return $sid if ( $sid );
+  
+
 
   my %call_hash = ( pid        => $pid,
 		    name       => $name,
@@ -178,6 +192,11 @@ sub fetch_variation_by_chr_pos {
 sub insert_variation {
   my ($chr, $pos, $ref, $alt) = @_;
 
+  if (!$chr|| !$pos || !$ref || !$alt) {
+    print STDERR "parameter missing in the function call\n";
+    return undef;
+  }
+
   my @vars = fetch_variation_by_chr_pos($chr, $pos);
   foreach my $var (@vars ) {
     my ( $vid, $v_ref, $v_alt) = ($$var{vid}, $$var{ref},$$var{alt});
@@ -201,6 +220,16 @@ sub insert_variation {
 sub update_variation {
   my ($vid, $chr, $pos, $ref, $alt, $status) = @_;
 
+  if ( ! $vid ) {
+    print STDERR "parameter missing in function call\n";
+    return undef;
+  }
+
+  if ( $status && $status ne 'analysis' && $status ne 'done' ) {
+    print STDERR "Status should be either: 'unannotated', 'analysis' or 'done', not $status\n";
+    return undef;
+  }
+
   my %call_hash;
   $call_hash{vid}    = $vid    if ($vid);
   $call_hash{chr}    = $chr    if ($chr);
@@ -213,38 +242,17 @@ sub update_variation {
 }
 
 
-
-# 
-# Should validate if an entry already exists.
-# 
-# Kim Brugger (07 Feb 2012)
-sub insert_annotation {
-  my ( $call_hash ) = @_;
-
-  return (EASIH::DB::insert($dbi, "annotation", $call_hash));
-}
-
-
-# 
-# Should validate if an entry already exists.
-# 
-# Kim Brugger (07 Feb 2012)
-sub fetch_annotation {
-  my ( $vid ) = @_;
-
-  my $q    = "SELECT * FROM annotation where vid = ?";
-  my $sth  = EASIH::DB::prepare($dbi, $q);
-  return(EASIH::DB::fetch_array_hash( $dbi, $sth, $vid ));
-}
-
-
-
 # 
 # 
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_sample_data {
   my ( $call_hash ) = @_;
+
+  if (! $call_hash || ! $$call_hash{sid} || ! $$call_hash{vid}) {
+    print STDERR "missing sid and/or vid in hash\n";
+    return undef;
+  }
 
   return (EASIH::DB::insert($dbi, "sample_data", $call_hash));
 }
@@ -256,10 +264,47 @@ sub insert_sample_data {
 sub fetch_sample_data {
   my ($sid, $vid) = @_;
 
-  my $q    = "SELECT * FROM sample_date where sid = ? AND vid = ?";
+  if (! $sid || ! $vid) {
+    print STDERR "missing sid and/or vid in as parameter\n";
+    return undef;
+  }
+  
+  my $q    = "SELECT * FROM sample_data where sid = ? AND vid = ?";
   my $sth  = EASIH::DB::prepare($dbi, $q);
   return(EASIH::DB::fetch_hash( $dbi, $sth, $sid, $vid ));
 }
+
+
+
+# 
+# Should validate if an entry already exists.
+# 
+# Kim Brugger (07 Feb 2012)
+sub insert_annotation {
+  my ( $call_hash ) = @_;
+  
+  if (! $call_hash || ! $$call_hash{vid}) {
+    print STDERR "missing vid in hash\n";
+    return undef;
+  }
+
+  return (EASIH::DB::insert($dbi, "annotation", $call_hash));
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub fetch_annotation {
+  my ( $vid ) = @_;
+
+  my $q    = "SELECT * FROM annotation where vid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return(EASIH::DB::fetch_array_hash( $dbi, $sth, $vid ));
+}
+
+
 
 
 1;
