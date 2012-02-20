@@ -191,9 +191,9 @@ ok( defined $new_vid, "Inserted sample data ");
 my $fetched_svid = EASIH::VCFdb::fetch_sample_data($sid);
 ok(! defined $fetched_svid, "fetched sample data wo/ parameter ");
 
-my $fetched_svid = EASIH::VCFdb::fetch_sample_data($sid, $vid);
+$fetched_svid = EASIH::VCFdb::fetch_sample_data($sid, $vid);
 is_deeply( \%call_hash, $fetched_svid, "Fetched sample data ");
-	 
+
 
 %call_hash = ( gene           => "BRCA", 
   	       transcript     => "TRANS", 
