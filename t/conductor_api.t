@@ -43,7 +43,7 @@ use lib '/home/kb468/projects/conductor/modules';
 my $rand_dbname = "test";
 print "Database name :: $rand_dbname\n";
 use EASIH::DB;
-use EASIH::Conductor;
+use EASIH::DB::Conductor;
 
 use Test::Simple tests => 16;
 
@@ -59,58 +59,57 @@ elsif (-e "../sql/conductor.sql") {
   EASIH::DB::sql_file($dbi_DB, "../sql/conductor.sql");
 }
 
-my $dbi = EASIH::Conductor::connect($rand_dbname, $dbhost, "easih_admin", "easih");
+my $dbi = EASIH::DB::Conductor::connect($rand_dbname, $dbhost, "easih_admin", "easih");
 
 ok( $dbi, 'Created and Connect to test database');
 
 ##           PROJECT              ##
-my $pid = EASIH::Conductor::insert_project("a99");
+my $pid = EASIH::DB::Conductor::insert_project("a99");
 ok($pid, 'Inserted a99 into project');
 
-$pid = EASIH::Conductor::update_project($pid, "A99");
+$pid = EASIH::DB::Conductor::update_project($pid, "A99");
 ok($pid, 'Updated a99 to A99 in project');
 
-my $fetched_pid = EASIH::Conductor::fetch_project_id("A99");
+my $fetched_pid = EASIH::DB::Conductor::fetch_project_id("A99");
 ok($fetched_pid == $pid, 'Fetched pid for A99 is correct');
 
-my $fetched_name = EASIH::Conductor::fetch_project_name( $pid );
+my $fetched_name = EASIH::DB::Conductor::fetch_project_name( $pid );
 ok($fetched_name eq "A99", 'Fetched project name by pid is correct');
 
 ##           SAMPLES              ##
-
-my $sid = EASIH::Conductor::insert_sample($pid + 999, "a990001");
+my $sid = EASIH::DB::Conductor::insert_sample($pid + 999, "a990001");
 ok(! defined $sid, "Check for invalid pid with insert sample");
 
-$sid = EASIH::Conductor::insert_sample($pid, "a990001");
+$sid = EASIH::DB::Conductor::insert_sample($pid, "a990001");
 ok($sid, "Inserted a990001 into sample");
 
-$sid = EASIH::Conductor::update_sample($sid, "A990001");
+$sid = EASIH::DB::Conductor::update_sample($sid, "A990001");
 ok($sid, 'Updated a990001 to A990001 in sample');
 
-my $fetched_sid = EASIH::Conductor::fetch_sample_id("A990001");
+my $fetched_sid = EASIH::DB::Conductor::fetch_sample_id("A990001");
 ok($fetched_sid == $sid, 'Fetched sid for A990001 is correct');
 
-$fetched_name = EASIH::Conductor::fetch_sample_name( $sid );
+$fetched_name = EASIH::DB::Conductor::fetch_sample_name( $sid );
 ok($fetched_name eq "A990001", 'Fetched sample name by pid is correct');
 
 ##           ANALYSIS             ##
-my $aid = EASIH::Conductor::insert_analysis("BRCA", "NILES");
+my $aid = EASIH::DB::Conductor::insert_analysis("BRCA", "NILES");
 ok($aid, 'Inserted ref: BRCA w/ pipeline NILES into analysis');
 
-my $fetched_aid = EASIH::Conductor::fetch_analysis_id("BRCA", "NILES");
+my $fetched_aid = EASIH::DB::Conductor::fetch_analysis_id("BRCA", "NILES");
 ok($aid && $fetched_aid == $aid, "Fetch aid ref: BRCA w/ pipeline NILES.");
 
-my $analysis_ref = EASIH::Conductor::fetch_analysis( $aid );
+my $analysis_ref = EASIH::DB::Conductor::fetch_analysis( $aid );
 ok($analysis_ref && $$analysis_ref{reference} eq "BRCA" && $$analysis_ref{pipeline} eq "NILES", "Fetched analysis is correct");
 
 ##           STATUS               ##
-my $status = EASIH::Conductor::insert_status( $sid+999, "OFFLOADED" );
+my $status = EASIH::DB::Conductor::insert_status( $sid+999, "OFFLOADED" );
 ok( ! defined $status, "Check for invalid pid with inserted status for sample");
 
-$status = EASIH::Conductor::insert_status( $sid, "OFFLOADED" );
+$status = EASIH::DB::Conductor::insert_status( $sid, "OFFLOADED" );
 ok($status, "Inserted status for sample");
 
-my $statuses = EASIH::Conductor::fetch_statuses( $sid);
+my $statuses = EASIH::DB::Conductor::fetch_statuses( $sid);
 ok($statuses && $$statuses[0][1] eq "OFFLOADED", "Fetched statuses for sample");
 
 

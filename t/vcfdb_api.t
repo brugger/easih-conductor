@@ -46,7 +46,7 @@ my $rand_dbname = "test";
 print "Database name :: $rand_dbname\n";
 
 use Test::More tests => 37;
-use EASIH::VCFdb;
+use EASIH::DB::VCFdb;
 
 #EASIH::DB::drop_db($rand_dbname, $dbhost, "easih_admin", "easih");
 
@@ -60,64 +60,64 @@ elsif (-e "../sql/VCFdb.sql") {
   EASIH::DB::sql_file($dbi_DB, "../sql/VCFdb.sql");
 }
 
-my $dbi = EASIH::VCFdb::connect($rand_dbname, $dbhost, "easih_admin", "easih");
+my $dbi = EASIH::DB::VCFdb::connect($rand_dbname, $dbhost, "easih_admin", "easih");
 ok( $dbi, 'Created and Connect to test database');
 
 ##           PROJECT              ##
-my $pid = EASIH::VCFdb::insert_project(undef);
+my $pid = EASIH::DB::VCFdb::insert_project(undef);
 ok(!defined $pid, 'Check for provided pid when inserting a project');
 
-$pid = EASIH::VCFdb::insert_project("a99");
+$pid = EASIH::DB::VCFdb::insert_project("a99");
 ok($pid, 'Inserted a99 into project');
 
-$pid = EASIH::VCFdb::update_project($pid, "A99");
+$pid = EASIH::DB::VCFdb::update_project($pid, "A99");
 ok($pid, 'Updated a99 to A99 in project');
 
-my $fetched_pid = EASIH::VCFdb::fetch_project_id("A99");
+my $fetched_pid = EASIH::DB::VCFdb::fetch_project_id("A99");
 ok($fetched_pid == $pid, 'Fetched pid for A99 is correct');
 
-my $fetched_name = EASIH::VCFdb::fetch_project_name( $pid );
+my $fetched_name = EASIH::DB::VCFdb::fetch_project_name( $pid );
 ok($fetched_name eq "A99", 'Fetched project name by pid is correct');
 
-my $sid = EASIH::VCFdb::insert_sample($pid + 999, "a990001", "HEADER");
+my $sid = EASIH::DB::VCFdb::insert_sample($pid + 999, "a990001", "HEADER");
 ok(! defined $sid, "Check for provided VCF_header when inserting a sample");
 
-$sid = EASIH::VCFdb::insert_sample(undef, "a990001", "NEW HEADER");
+$sid = EASIH::DB::VCFdb::insert_sample(undef, "a990001", "NEW HEADER");
 ok(! defined $sid, "Check for provided pid when inserting a sample");
 
-$sid = EASIH::VCFdb::insert_sample($pid, , "NEW HEADER");
+$sid = EASIH::DB::VCFdb::insert_sample($pid, , "NEW HEADER");
 ok(! defined $sid, "Check for provided sample name when inserting a sample");
 
-$sid = EASIH::VCFdb::insert_sample($pid + 999, "a990001");
+$sid = EASIH::DB::VCFdb::insert_sample($pid + 999, "a990001");
 ok(! defined $sid, "Check for invalid pid with insert sample");
 
-$sid = EASIH::VCFdb::insert_sample($pid, "a990001", "HEADER");
+$sid = EASIH::DB::VCFdb::insert_sample($pid, "a990001", "HEADER");
 ok($sid, "Inserted a990001 into sample");
-$sid = EASIH::VCFdb::update_sample($sid, "A990001", "NEW HEADER");
+$sid = EASIH::DB::VCFdb::update_sample($sid, "A990001", "NEW HEADER");
 ok($sid, 'Updated a990001 to A990001 in sample');
 
-my $fetched_sid = EASIH::VCFdb::fetch_sample_id("A990001");
+my $fetched_sid = EASIH::DB::VCFdb::fetch_sample_id("A990001");
 ok($fetched_sid == $sid, 'Fetched sid for A990001 is correct');
 
-$fetched_name = EASIH::VCFdb::fetch_sample_name( $fetched_sid );
+$fetched_name = EASIH::DB::VCFdb::fetch_sample_name( $fetched_sid );
 ok($fetched_name eq "A990001", 'Fetched sample name by pid is correct');
 
-my $vid = EASIH::VCFdb::insert_variation(undef, 1000000, "AA", "T");
+my $vid = EASIH::DB::VCFdb::insert_variation(undef, 1000000, "AA", "T");
 ok(! defined $vid, "Check for provided chr when inserting a variation");
 
-$vid = EASIH::VCFdb::insert_variation(12, undef, "AA", "T");
+$vid = EASIH::DB::VCFdb::insert_variation(12, undef, "AA", "T");
 ok(! defined $vid, "Check for provided pos when inserting a variation");
 
-$vid = EASIH::VCFdb::insert_variation(12, 1000000, undef, "T");
+$vid = EASIH::DB::VCFdb::insert_variation(12, 1000000, undef, "T");
 ok(! defined $vid, "Check for provided ref when inserting a variation");
 
-$vid = EASIH::VCFdb::insert_variation(12, 1000000, "AA", undef);
+$vid = EASIH::DB::VCFdb::insert_variation(12, 1000000, "AA", undef);
 ok(! defined $vid, "Check for provided alt when inserting a variation");
 
-$vid = EASIH::VCFdb::insert_variation(12, 1000000, "AA", "T");
+$vid = EASIH::DB::VCFdb::insert_variation(12, 1000000, "AA", "T");
 ok( $vid, "Inserted 12:1000000, AA>T into variation");
 
-my %var = EASIH::VCFdb::hash_fetch_variation_by_vid( $vid );
+my %var = EASIH::DB::VCFdb::hash_fetch_variation_by_vid( $vid );
 ok( $var{vid} eq $vid    &&
     $var{chr} eq 12      &&
     $var{pos} eq 1000000 &&
@@ -125,7 +125,7 @@ ok( $var{vid} eq $vid    &&
     $var{alt} eq "T"     &&
     $var{status} eq "unannotated", "Correctly fetched 12:1000000, AA>T from variation");
 
-my @vars = EASIH::VCFdb::fetch_variation_by_chr_pos(12, 1000000);
+my @vars = EASIH::DB::VCFdb::fetch_variation_by_chr_pos(12, 1000000);
 %var = %{$vars[0]};
 ok( $var{vid} eq $vid    &&
     $var{chr} eq 12      &&
@@ -134,31 +134,31 @@ ok( $var{vid} eq $vid    &&
     $var{alt} eq "T"     &&
     $var{status} eq "unannotated", "Correctly fetched 12:1000000, AA>T from variation");
 
-my $new_vid = EASIH::VCFdb::update_variation(undef, 1000000, "AA", "T");
+my $new_vid = EASIH::DB::VCFdb::update_variation(undef, 1000000, "AA", "T");
 ok(! defined $new_vid, "Check for provided vid when updating a variation");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, 11);
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, 11);
 ok( $new_vid, "Updated variation chromosome");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, 1000001);
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, 1000001);
 ok( $new_vid, "Updated variation position");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, undef, "AAA");
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, undef, "AAA");
 ok( $new_vid, "Updated variation reference in variation");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, undef, undef, "TT");
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, undef, undef, "TT");
 ok( $new_vid, "Updated alt in variation");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, undef, undef, undef, "annotated");
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, undef, undef, undef, "annotated");
 ok(! defined $new_vid, "Updated variation check for correct status flags");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, undef, undef, undef, "analysis");
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, undef, undef, undef, "analysis");
 ok( $new_vid, "Updated variation check for correct status flags");
 
-$new_vid = EASIH::VCFdb::update_variation($vid, undef, undef, undef, undef, "done");
+$new_vid = EASIH::DB::VCFdb::update_variation($vid, undef, undef, undef, undef, "done");
 ok( defined $new_vid, "Updated variation check for correct status flags");
 
-%var = EASIH::VCFdb::hash_fetch_variation_by_vid( $vid );
+%var = EASIH::DB::VCFdb::hash_fetch_variation_by_vid( $vid );
 ok( $var{vid} eq $vid    &&
     $var{chr} eq 11      &&
     $var{pos} eq 1000001 &&
@@ -173,7 +173,7 @@ my %call_hash = (filter        => "PASS",
 		 format_keys   => "GT:AD:DP:GQ:PL",
 		 format_values => "0/1:39,32:71:99:650,0,804");
 
-my $svid = EASIH::VCFdb::insert_sample_data(\%call_hash);
+my $svid = EASIH::DB::VCFdb::insert_sample_data(\%call_hash);
 ok( ! defined $svid, "Fail inserting sample data wo/ missing key ");
 
 %call_hash = (sid           => $sid,
@@ -185,13 +185,13 @@ ok( ! defined $svid, "Fail inserting sample data wo/ missing key ");
 	      format_values => "0/1:39,32:71:99:650,0,804");
 
 
-$svid = EASIH::VCFdb::insert_sample_data(\%call_hash);
+$svid = EASIH::DB::VCFdb::insert_sample_data(\%call_hash);
 ok( defined $new_vid, "Inserted sample data ");
 
-my $fetched_svid = EASIH::VCFdb::fetch_sample_data($sid);
+my $fetched_svid = EASIH::DB::VCFdb::fetch_sample_data($sid);
 ok(! defined $fetched_svid, "fetched sample data wo/ parameter ");
 
-$fetched_svid = EASIH::VCFdb::fetch_sample_data($sid, $vid);
+$fetched_svid = EASIH::DB::VCFdb::fetch_sample_data($sid, $vid);
 is_deeply( \%call_hash, $fetched_svid, "Fetched sample data ");
 
 
@@ -207,14 +207,14 @@ is_deeply( \%call_hash, $fetched_svid, "Fetched sample data ");
 	       condel         => "condel_score", 
 	       GERP           => 123);
 
-my $aid = EASIH::VCFdb::insert_annotation(\%call_hash);
+my $aid = EASIH::DB::VCFdb::insert_annotation(\%call_hash);
 ok( ! defined $aid, "Failing inserting annotation  wo/ missing key ");
 
 $call_hash{ vid } = $vid;
-$aid = EASIH::VCFdb::insert_annotation(\%call_hash);
+$aid = EASIH::DB::VCFdb::insert_annotation(\%call_hash);
 ok( defined $aid, "Inserting annotation ");
 
-my $annot = EASIH::VCFdb::fetch_annotation($vid);
+my $annot = EASIH::DB::VCFdb::fetch_annotation($vid);
 is_deeply(\%call_hash, $$annot[0], "Fetched annotation data");
 
 # Delete the tmp database now when we are done with it.
