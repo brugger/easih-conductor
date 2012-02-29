@@ -3,12 +3,10 @@ package EASIH::CRR;
 # Common Run Reporting for tracking progress of what is being done
 # 
 # 
-# Kim Brugger (13 Jun 2011), contact: kim.brugger@easih.ac.uk
-
+# Kim Brugger (29 Feb 2012), contact: kim.brugger@easih.ac.uk
 use strict;
 use warnings;
 use Data::Dumper;
-
 
 my $tasks = 0;
 
