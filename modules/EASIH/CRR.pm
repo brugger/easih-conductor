@@ -172,7 +172,8 @@ sub parse {
       print STDERR "$status is unknown, expected: ok, running, failed or waiting\n";
       return 0;
     }
-    if ( $count && ! is_integer($count)) {
+    next if (!$count && $status eq "waiting");
+    if ($count && ! is_integer($count)) {
       print STDERR "$count is not an integer\n";
       return 0;
     }

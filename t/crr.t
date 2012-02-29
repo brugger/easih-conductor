@@ -62,15 +62,9 @@ my $exp_report = "1..5
 my $report =  EASIH::CRR::report();
 ok($report eq $exp_report, 'expected report is identical to generated report');
 
+#print $report;
+
 my %old_hash = EASIH::CRR::_statuses();
-
-$exp_report = "1..5
-1\tok
-2\tok\t2
-2\trunning\t3
-3\twaiting\t4
-";
-
 EASIH::CRR::parse($exp_report);
 my %new_hash = EASIH::CRR::_statuses();
 
