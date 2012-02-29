@@ -38,23 +38,21 @@ use lib '/home/kb468/easih-toolbox/modules/';
 use lib '/home/kb468/projects/conductor/modules';
 use EASIH::CRR;
 
-use Test::Simple tests => 10;
+use Test::More tests => 11;
 
 ok(EASIH::CRR::is_integer("tyt") == 0, 'Tested is_integer with a string');
 ok(EASIH::CRR::is_integer(2.2) == 0, 'Tested is_integer with a float');
 ok(EASIH::CRR::is_integer(5) == 1, 'Tested is_integer with an integer');
 
-ok(EASIH::CRR::steps(5) == 5, 'Created a 5 step process');
+ok(EASIH::CRR::tasks(5) == 5, 'Created a 5 tasks process');
 ok(EASIH::CRR::ok(1), "Created a finished task, not specified jobs");
 ok(EASIH::CRR::ok(2, 2), "Created a finished task, with 2 job");
-ok(EASIH::CRR::failed(2, 1), "Created a failed task, 1 job");
 ok(EASIH::CRR::running(2, 3), "Created a running task, 3 jobs");
 ok(EASIH::CRR::waiting(3, 4), "Created a waiting task, 4 jobs");
 
 
 my $exp_report = "1..5
 1\tok
-2\tfailed
 2\tok\t2
 2\trunning\t3
 3\twaiting\t4
@@ -63,3 +61,26 @@ my $exp_report = "1..5
 
 my $report =  EASIH::CRR::report();
 ok($report eq $exp_report, 'expected report is identical to generated report');
+
+my %old_hash = EASIH::CRR::_statuses();
+
+$exp_report = "1..5
+1\tok
+2\tok\t2
+2\trunning\t3
+3\twaiting\t4
+";
+
+EASIH::CRR::parse($exp_report);
+my %new_hash = EASIH::CRR::_statuses();
+
+is_deeply(\%new_hash, \%old_hash, "Parsing of a CRR report");
+ok(EASIH::CRR::failed(2, 1), "Created a failed task, 1 job");
+$report =  EASIH::CRR::report();
+$exp_report = "1..5
+1\tok
+2\tfailed
+";
+
+ok($report eq $exp_report, 'expected failed run report is identical to generated report');
+

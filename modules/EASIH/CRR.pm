@@ -10,19 +10,28 @@ use warnings;
 use Data::Dumper;
 
 
-my $steps = 0;
+my $tasks = 0;
 
 my %statuses;
+
 
 # 
 # 
 # 
 # Kim Brugger (29 Feb 2012)
-sub steps {
-  my ($new_steps) = @_;
+sub _statuses {
+  return %statuses;
+}
+
+# 
+# 
+# 
+# Kim Brugger (29 Feb 2012)
+sub tasks {
+  my ($new_tasks) = @_;
   
-  $steps = $new_steps if ( $new_steps && is_integer($new_steps));
-  return $steps;
+  $tasks = $new_tasks if ( $new_tasks && is_integer($new_tasks));
+  return $tasks;
 }
 
 
@@ -32,51 +41,37 @@ sub steps {
 # 
 # Kim Brugger (29 Feb 2012)
 sub _add_values {
-  my ($type, $step, $jobs) = @_;
+  my ($type, $task, $jobs) = @_;
 
   if ( ! $type ) {
     print STDERR "No type given, cannot store this\n";
     return 0;
   }
-  return 0 if ( !is_integer($step));
+  return 0 if ( !is_integer($task));
   return 0 if ( $jobs && !is_integer($jobs));
 
-  $statuses{$step}{$type} = $jobs || 1;
+  $statuses{$task}{$type} = $jobs || 1;
   return 1;
 }
-
-
-
-# 
-# 
-# 
-# Kim Brugger (29 Feb 2012)
-sub ok {
-  my ($step, $jobs) = @_;
-  
-  return _add_values("ok", $step, $jobs);
-}
-
 
 # 
 # 
 # 
 # Kim Brugger (29 Feb 2012)
 sub failed {
-  my ($step, $jobs) = @_;
+  my ($task, $jobs) = @_;
   
-  return _add_values("failed", $step, $jobs);
+  return _add_values("failed", $task, $jobs);
 }
-
 
 # 
 # 
 # 
 # Kim Brugger (29 Feb 2012)
-sub waiting {
-  my ($step, $jobs) = @_;
+sub ok {
+  my ($task, $jobs) = @_;
   
-  return _add_values("waiting", $step, $jobs);
+  return _add_values("ok", $task, $jobs);
 }
 
 
@@ -85,10 +80,21 @@ sub waiting {
 # 
 # Kim Brugger (29 Feb 2012)
 sub running {
-  my ($step, $jobs) = @_;
+  my ($task, $jobs) = @_;
   
-  return _add_values("running", $step, $jobs);
+  return _add_values("running", $task, $jobs);
 }
+
+# 
+# 
+# 
+# Kim Brugger (29 Feb 2012)
+sub waiting {
+  my ($task, $jobs) = @_;
+  
+  return _add_values("waiting", $task, $jobs);
+}
+
 
 
 # 
@@ -97,33 +103,92 @@ sub running {
 # Kim Brugger (29 Feb 2012)
 sub report {
 
-  if (!$steps ) {
-    $steps = ( sort {$b <=> $a } keys %statuses )[0];
+  if (!$tasks ) {
+    $tasks = ( sort {$b <=> $a } keys %statuses )[0];
   }
 
   my $res = "";
-  $res = "1..$steps\n";
+  $res = "1..$tasks\n";
 
-  for(my $step=1;$step<=$steps;$step++) {
+  for(my $task=1;$task<=$tasks;$task++) {
     
-    if (!$statuses{ $step}) {
-      $res .= join("\t", $step, "waiting") ."\n";
+    if (!$statuses{ $task}) {
+      $res .= join("\t", $task, "waiting") ."\n";
     }
     else {
-      foreach my $type (sort keys %{$statuses{ $step}} ) {
-	if ( $statuses{ $step }{ $type } == 1) { 
-	  $res .= join("\t", $step, $type) ."\n";
+      foreach my $type (sort keys %{$statuses{ $task}} ) {
+	if ( $statuses{ $task }{ $type } == 1) { 
+	  $res .= join("\t", $task, $type) ."\n";
 	}
 	else {
-	  $res .= join("\t", $step, $type, $statuses{ $step }{ $type }) ."\n";
+	  $res .= join("\t", $task, $type, $statuses{ $task }{ $type }) ."\n";
 	}
+
+	goto FAILED if ( $type eq "failed");
       }
     }
   }
 
+ FAILED:
 
   return $res;
 }
+
+
+# 
+# 
+# 
+# Kim Brugger (29 Feb 2012)
+sub readin {
+  my ($file) = @_;
+
+  open (my $in, $file) || die "Could not open '$file': $!\n";
+  my $content = join("", <$in>);
+  close($in);
+  parse( $content );
+  
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (29 Feb 2012)
+sub parse {
+  my ($report) = @_;
+
+  undef %statuses;
+  my @lines = split("\n", $report);
+
+  foreach my $line ( @lines ) {
+
+    if ($line =~ /^1\.\.(\d+)/ ){
+      $tasks = $1;
+      next;
+    }
+
+    my ($step, $status, $count) = split("\t", $line);
+    if ( $status ne "ok" && $status ne "running" && $status ne "failed" && $status ne "waiting") {
+      print STDERR "$status is unknown, expected: ok, running, failed or waiting\n";
+      return 0;
+    }
+    if ( $count && ! is_integer($count)) {
+      print STDERR "$count is not an integer\n";
+      return 0;
+    }
+
+    if (!is_integer($step)) {
+      print STDERR "$step is not an integer\n";
+      return 0;
+    }
+
+    $statuses{$step}{$status} = $count || 1;
+  }
+
+  return 1;
+}
+
+
 
 # 
 # 
