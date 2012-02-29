@@ -8,41 +8,51 @@ package EASIH::Log;
 use strict;
 use warnings;
 use Data::Dumper;
+use Fcntl qw/ :flock /;
+use Sys::Hostname;
+my $log_file;
 
+my $hostname;
 
 # 
-# redirect STDERR to the logfile...
+# 
 # 
 # Kim Brugger (29 Feb 2012)
-sub open {
-  my ($file) = @_;
-
-  # if we can write to the file do it, if the file do not exists, but we can 
-  # write to the directory create the file.
-  open (STDERR, $$file) || die  "Could not open logfile '$LOG_FILE': $!\n";
-
+sub file {
+  my ($filename) = @_;
+  
+  $log_file = $filename;
 }
 
 
-
-
-
 # 
 # 
 # 
 # Kim Brugger (29 Feb 2012)
-sub log {
+sub write {
   my ($message) = @_;
 
-  printf STDERR ("%s @ %02d/%02d-%4d %02d:%02d:%02d\n",
-                "HOSTNAME",$mday,$mon,$year,$hour,$min,$sec);
+  $message ||= " ping...";
+  $message =~ s/\n\z//;
+  
+  if ( !$hostname ) {
+    $hostname = hostname;
+  }
 
   #    0    1    2     3     4    5     6     7
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = gmtime(time);
-  $year +=1900;$hour++;$mon++;
-  $message ||= " ping...";
-  $message =~ s/\n\z//;
-  print STDERR "$message\n";
+  $message = sprintf("%s @ %02d/%02d-%4d %02d:%02d:%02d\t%s\n",
+		     $hostname,$mday,$mon,1900+$year,$hour,$min,$sec, $message);
+
+  if ( $log_file ) {
+    open (my $fh , ">> ", $log_file) or die  "$0 [$$]: open: $!";
+    flock $fh, LOCK_EX      or die  "$0 [$$]: flock: $!";
+    print $fh  "$message" or die  "$0 [$$]: write: $!";
+    close $fh               or warn "$0 [$$]: close: $!";
+  }
+  else {
+    print STDERR "$message";
+  }
 }
 
 
