@@ -38,7 +38,7 @@ use lib '/home/kb468/easih-toolbox/modules/';
 use lib '/home/kb468/projects/conductor/modules';
 use EASIH::CRR;
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 ok(EASIH::CRR::is_integer("tyt") == 0, 'Tested is_integer with a string');
 ok(EASIH::CRR::is_integer(2.2) == 0, 'Tested is_integer with a float');
