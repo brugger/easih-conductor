@@ -63,11 +63,11 @@ sub _toLevel {
   return undef if ( ! defined $new_level);
 
   if ( $new_level =~ /^\d+\z/ && $new_level >= -1 && $new_level <= 7 ) {
-    return $level;
+    return $new_level;
   }
   else {
     if ($new_level eq "OFF") {
-	return $level;
+      return $new_level;
     }
     
     for(my $i=0;$i<=7;$i++) {
