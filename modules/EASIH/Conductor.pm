@@ -64,14 +64,14 @@ sub offload_torrent_runs {
 
   ### Fetch Data from iondb (located on Ion torrent) ###
   my $dbi = DBI->connect("DBI:Pg:dbname=iondb;host=mgion01.medschl.cam.ac.uk", 'ion') || die "Could not connect to database: $DBI::errstr";
-  my $q = 'select "fastqLink", "pgmName", "status", "chipType", "chipBarcode" from rundb_results results join rundb_experiment experiments on results.experiment_id = experiments.id where status = \'Completed\'';
+  my $q = 'select experiments.id, "fastqLink", "pgmName", "status", "chipType", "chipBarcode" from rundb_results results join rundb_experiment experiments on results.experiment_id = experiments.id where status = \'Completed\'';
 
   my $sth = $dbi->prepare( $q );
   $sth->execute();
 
   while (my @results = $sth->fetchrow_array()) {
-    my ($fq_file, $pgmName, $status, $chipType, $chipBarcode ) = @results;
-    EASIH::Log::write("mgion01:/results/analysis/$fq_file contains a '$status' run from a $chipType ($chipBarcode) on machine $pgmName, should offload it\n", "TRACE");
+    my ($id, $fq_file, $pgmName, $status, $chipType, $chipBarcode ) = @results;
+    EASIH::Log::write("$id mgion01:/results/analysis/$fq_file contains a '$status' run from a $chipType ($chipBarcode) on machine $pgmName, should offload it\n", "TRACE");
   }
 }
 
