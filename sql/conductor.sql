@@ -3,8 +3,8 @@
 CREATE TABLE project (
 
   pid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name                VARCHAR(3) NOT NULL UNIQUE,
   aid                 INT,
+  name                VARCHAR(3) NOT NULL UNIQUE,
 
   KEY name_idx (name)
 
@@ -30,19 +30,17 @@ CREATE TABLE file (
   sid                 INT NOT NULL ,
   rid		      INT NOT NULL,
   name                VARCHAR(50) NOT NULL ,
-  timestamp           BIGINT,
 
   KEY name_idx (name),
   KEY sid_idx  (sid)
 );
-
 
 CREATE TABLE run (
 
   rid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   mid		      INT NOT NULL,
   name                VARCHAR(100) NOT NULL UNIQUE,
-
+  
   KEY name_idx (name)
 );
 
@@ -50,8 +48,9 @@ CREATE TABLE sequencer (
 
   mid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(100) NOT NULL UNIQUE,
-  platform            VARCHAR(50),
-  
+  platform            VARCHAR(50),  
+  center	      VARCHAR(50),   
+
   KEY name_idx (name)
 );
 
@@ -64,10 +63,37 @@ CREATE TABLE analysis (
 );
 
 
-CREATE TABLE status (
-  sid                INT NOT NULL,
+CREATE TABLE run_status (
+  rid                INT NOT NULL,
   status	     VARCHAR(100),
   stamp              BIGINT
 );
+
+CREATE TABLE file_status (
+  fid                INT NOT NULL,
+  status	     VARCHAR(100),
+  stamp              BIGINT,
+
+  KEY fid_idx ( fid )
+);
+
+CREATE TABLE sample_analysis_status (
+  sid                INT NOT NULL,
+  status	     VARCHAR(100),
+  stamp              BIGINT,
+
+  KEY fid_idx ( sid )
+);
+
+CREATE TABLE sample_crr (
+  sid                INT NOT NULL,
+  task 	             INT,
+  type 	             VARCHAR(20),
+  count 	     INT,
+
+  KEY fid_idx ( sid )
+);
+
+
 
 

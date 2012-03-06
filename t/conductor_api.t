@@ -45,7 +45,7 @@ print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-use Test::Simple tests => 16;
+use Test::Simple tests => 29;
 
 my $dbhost = 'localhost';
 
@@ -92,6 +92,65 @@ ok($fetched_sid == $sid, 'Fetched sid for A990001 is correct');
 $fetched_name = EASIH::DB::Conductor::fetch_sample_name( $sid );
 ok($fetched_name eq "A990001", 'Fetched sample name by pid is correct');
 
+##           SEQUENCER            ##
+my $mid = EASIH::DB::Conductor::insert_sequencer(undef, "HiSeq1000");
+ok(! defined $mid, "Check for missing name with insert sequencer");
+
+$mid = EASIH::DB::Conductor::insert_sequencer(undef, "HiSeq1000");
+ok(! defined $mid, "Check for missing platform with insert sequencer");
+
+$mid = EASIH::DB::Conductor::insert_sequencer("illumina4", "HiSeq1000");
+ok(defined $mid, "Inserted illumina4, HiSeq2000 into sequencer table");
+
+my $updated_mid = EASIH::DB::Conductor::update_sequencer($mid, "Illumina4", "HiSeq 2000");
+ok(defined $updated_mid, 'Updated sequencer, changed the name + platform');
+
+my $fetched_mid = EASIH::DB::Conductor::fetch_sequencer_id("Illumina4");
+ok($mid == $updated_mid, 'Fetched sid for A990001 is correct');
+
+my $sequencer = EASIH::DB::Conductor::fetch_sequencer( $mid );
+ok($sequencer && 
+   $$sequencer{name} eq "Illumina4" &&
+   $$sequencer{platform} eq "HiSeq 2000", 'Fetched sequencer correctly');
+
+##           RUN            ##
+my $rid = EASIH::DB::Conductor::insert_run(undef, "120229_MGILLUMINA2_00066_FC");
+ok(! defined $rid, "Check for missing sequencer id (mid) with insert run");
+
+$rid = EASIH::DB::Conductor::insert_run($updated_mid, undef);
+ok(! defined $rid, "Check for missing name with insert run");
+
+$rid = EASIH::DB::Conductor::insert_run($updated_mid, "120229_ILLUMINA2_00066_FC");
+ok(defined $rid, "Inserted run");
+
+my $updated_rid = EASIH::DB::Conductor::update_run($rid, $mid, "120229_ILLUMINA2_00066_FC");
+ok(defined $updated_mid, 'Failing updateing sequencer, wrong rid');
+
+my $fetched_rid = EASIH::DB::Conductor::fetch_run_id("120229_ILLUMINA2_00066_FC");
+ok($rid == $fetched_rid, 'Fetched run id (rid) correctly');
+
+my $run = EASIH::DB::Conductor::fetch_run( $rid );
+ok($run && 
+   $$run{name} eq "120229_ILLUMINA2_00066_FC" &&
+   $$run{mid} eq $mid, 'Fetched run correctly');
+
+
+
+
+##           FILE              ##
+my $fid = EASIH::DB::Conductor::insert_file();
+ok(! defined $fid, "Check for missing sid in insert sample");
+
+$fid = EASIH::DB::Conductor::insert_file($sid, undef, undef);
+ok(! defined $fid, "Check for missing rid in insert sample");
+
+$fid = EASIH::DB::Conductor::insert_file($sid, $rid, undef);
+ok(! defined $fid, "Check for missing name in insert sample");
+
+$fid = EASIH::DB::Conductor::insert_file($sid, $rid, "/data/A99/A990001.1.fq.gz");
+ok($fid, "Inserted /data/A99/A990001.1.fq.gz into file");
+
+
 ##           ANALYSIS             ##
 my $aid = EASIH::DB::Conductor::insert_analysis("BRCA", "NILES");
 ok($aid, 'Inserted ref: BRCA w/ pipeline NILES into analysis');
@@ -102,15 +161,6 @@ ok($aid && $fetched_aid == $aid, "Fetch aid ref: BRCA w/ pipeline NILES.");
 my $analysis_ref = EASIH::DB::Conductor::fetch_analysis( $aid );
 ok($analysis_ref && $$analysis_ref{reference} eq "BRCA" && $$analysis_ref{pipeline} eq "NILES", "Fetched analysis is correct");
 
-##           STATUS               ##
-my $status = EASIH::DB::Conductor::insert_status( $sid+999, "OFFLOADED" );
-ok( ! defined $status, "Check for invalid pid with inserted status for sample");
-
-$status = EASIH::DB::Conductor::insert_status( $sid, "OFFLOADED" );
-ok($status, "Inserted status for sample");
-
-my $statuses = EASIH::DB::Conductor::fetch_statuses( $sid);
-ok($statuses && $$statuses[0][1] eq "OFFLOADED", "Fetched statuses for sample");
 
 
 # Delete the tmp database now when we are done with it.

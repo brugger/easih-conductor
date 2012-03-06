@@ -147,6 +147,225 @@ sub update_sample {
 }
 
 
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sequencer_id {
+  my ( $name ) = @_;
+  my $q    = "SELECT mid FROM sequencer WHERE name = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @line = EASIH::DB::fetch_array( $dbi, $sth, $name );
+  return $line[0] || undef;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sequencer {
+  my ( $mid ) = @_;
+  my $q    = "SELECT * FROM sequencer WHERE mid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return EASIH::DB::fetch_hash( $dbi, $sth, $mid );
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub insert_sequencer {
+  my ($name, $platform) = @_;
+  
+  if (! $name || ! $platform) {
+    print STDERR "Sequencer needs both a name and a platform\n";
+    return undef;
+  }
+
+  my $mid = fetch_sequencer_id($name);
+  return $mid if ( $mid );
+
+  my %call_hash = ( name     => $name,
+		    platform => $platform);
+
+  return (EASIH::DB::insert($dbi, "sequencer", \%call_hash));
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub update_sequencer {
+  my ($mid, $name, $platform) = @_;
+
+  my %call_hash;
+  $call_hash{mid}      = $mid;
+  $call_hash{name}     = $name     if ( $name     );
+  $call_hash{platform} = $platform if ( $platform );
+
+  return (EASIH::DB::update($dbi, "sequencer", \%call_hash, "mid"));
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_run_id {
+  my ( $name ) = @_;
+  my $q    = "SELECT rid FROM run WHERE name = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @line = EASIH::DB::fetch_array( $dbi, $sth, $name );
+  return $line[0] || undef;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_run {
+  my ( $rid ) = @_;
+  my $q    = "SELECT * FROM run WHERE rid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return EASIH::DB::fetch_hash( $dbi, $sth, $rid );
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub insert_run {
+  my ($mid, $name) = @_;
+  
+  if (! $mid || ! $name) {
+    print STDERR "run needs both a name and a sequencer id (mid)\n";
+    return undef;
+  }
+
+  my $rid = fetch_run_id($name);
+  return $rid if ( $rid );
+
+  my %call_hash = ( mid      => $mid,
+     		    name     => $name);
+
+  return (EASIH::DB::insert($dbi, "run", \%call_hash));
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub update_run {
+  my ($rid, $mid, $name) = @_;
+
+  if ( $rid ) {
+    print STDERR "rid missing in function call\n";
+    return undef;
+  }
+
+  my %call_hash;
+  $call_hash{rid}      = $rid;
+  $call_hash{mid}      = $mid;
+  $call_hash{name}     = $name if ( $name     );
+
+  return (EASIH::DB::update($dbi, "run", \%call_hash, "rid"));
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_file_id {
+  my ( $name ) = @_;
+  my $q    = "SELECT fid FROM sample WHERE name = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @line = EASIH::DB::fetch_array( $dbi, $sth, $name );
+  return $line[0] || undef;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_file_name {
+  my ( $fid ) = @_;
+  my $q    = "SELECT name FROM file WHERE fid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @line = EASIH::DB::fetch_array( $dbi, $sth, $fid );
+  return $line[0] || undef;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub insert_file {
+  my ($sid, $rid, $name) = @_;
+
+  if (! $rid ) {
+    print STDERR "A rid was not provided\n";
+    return undef;
+  }
+
+  if (! $sid ) {
+    print STDERR "A sid was not provided\n";
+    return undef;
+  }
+
+  if (! $name ) {
+    print STDERR "A name was not provided\n";
+    return undef;
+  }
+
+  if (! fetch_sample_name($sid) ) {
+    print STDERR "$sid is not a known sid\n";
+    return undef;
+  }
+
+  if (! fetch_run($rid) ) {
+    print STDERR "$rid is not a valid rid\n";
+    return undef;
+  }
+
+  my %call_hash = ( sid => $sid,
+		    rid => $rid,
+		    name => $name);
+
+  return (EASIH::DB::insert($dbi, "file", \%call_hash));
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub update_file {
+  my ($fid, $name) = @_;
+
+
+  if (! $fid ) {
+    print STDERR "A fid was not provided\n";
+    return undef;
+  }
+
+  if (! $name ) {
+    print STDERR "A name was not provided\n";
+    return undef;
+  }
+
+  my %call_hash;
+  $call_hash{fid}    = $fid  if ($fid);
+  $call_hash{name}   = $name if ($name);
+
+  return (EASIH::DB::update($dbi, "file", \%call_hash, "fid"));
+}
+
 
 # 
 # 
