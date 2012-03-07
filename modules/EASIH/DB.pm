@@ -95,12 +95,12 @@ sub prepare {
 # 
 # Kim Brugger (07 Mar 2012)
 sub do {
-  my ($dbi, $sql) = @_;
+  my ($dbi, $sql, @params) = @_;
 
   my $sth = $sql if ( $sql->isa("DBI::st"));
   $sth = $dbi->prepare( $sql ) if ( !$sth );
   
-  $sth->do( ) || die "$DBI::errstr\n";
+  $sth->execute( @params ) || die "$DBI::errstr\n";
   return 1;
 }
 
