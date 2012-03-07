@@ -45,7 +45,7 @@ print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-use Test::Simple tests => 29;
+use Test::More tests => 45;
 
 my $dbhost = 'localhost';
 
@@ -134,9 +134,6 @@ ok($run &&
    $$run{name} eq "120229_ILLUMINA2_00066_FC" &&
    $$run{mid} eq $mid, 'Fetched run correctly');
 
-
-
-
 ##           FILE              ##
 my $fid = EASIH::DB::Conductor::insert_file();
 ok(! defined $fid, "Check for missing sid in insert sample");
@@ -147,13 +144,35 @@ ok(! defined $fid, "Check for missing rid in insert sample");
 $fid = EASIH::DB::Conductor::insert_file($sid, $rid, undef);
 ok(! defined $fid, "Check for missing name in insert sample");
 
-$fid = EASIH::DB::Conductor::insert_file($sid, $rid, "/data/A99/A990001.1.fq.gz");
+$fid = EASIH::DB::Conductor::insert_file($sid, $rid, "/data/A99/A990001.1.fq");
 ok($fid, "Inserted /data/A99/A990001.1.fq.gz into file");
 
+my $updated_fid = EASIH::DB::Conductor::update_file($fid, "/data/A99/A990001.1.fq.gz");
+ok(defined $updated_fid, 'Updated a file entry');
+
+my $fetched_fid = EASIH::DB::Conductor::fetch_file_id("/data/A99/A990001.1.fq.gz");
+ok ($fetched_fid == $updated_fid, 'Fetched correct fileid (fid)');
+
+my $fetched_file_name = EASIH::DB::Conductor::fetch_file_name($fetched_fid);
+ok ($fetched_file_name eq "/data/A99/A990001.1.fq.gz", 'Fetched correct file name ');
+
+
+my $expected_hash = {'sid' => '1',
+		     'fid' => '1',
+		     'name' => '/data/A99/A990001.1.fq.gz',
+		     'rid' => '1'};
+
+my $file_hash1 = EASIH::DB::Conductor::fetch_file($fetched_fid);
+my $file_hash2 = EASIH::DB::Conductor::fetch_file($fetched_file_name);
+is_deeply($file_hash1, $expected_hash, "generic file fetch function returns correctly with a file id");
+is_deeply($file_hash1, $file_hash2, "generic file fetch function returns correctly with file id and file name");
 
 ##           ANALYSIS             ##
-my $aid = EASIH::DB::Conductor::insert_analysis("BRCA", "NILES");
-ok($aid, 'Inserted ref: BRCA w/ pipeline NILES into analysis');
+my $aid = EASIH::DB::Conductor::insert_analysis("BRCA2", "NILES");
+ok($aid, 'Inserted ref: BRCA2 w/ pipeline NILES into analysis');
+
+$aid = EASIH::DB::Conductor::update_analysis($aid, "BRCA", "NILES", 100000);
+ok($aid, 'Updated analysis ref to BRCA w/ pipeline NILES w/ 100000 reads');
 
 my $fetched_aid = EASIH::DB::Conductor::fetch_analysis_id("BRCA", "NILES");
 ok($aid && $fetched_aid == $aid, "Fetch aid ref: BRCA w/ pipeline NILES.");
@@ -161,7 +180,43 @@ ok($aid && $fetched_aid == $aid, "Fetch aid ref: BRCA w/ pipeline NILES.");
 my $analysis_ref = EASIH::DB::Conductor::fetch_analysis( $aid );
 ok($analysis_ref && $$analysis_ref{reference} eq "BRCA" && $$analysis_ref{pipeline} eq "NILES", "Fetched analysis is correct");
 
+##           RUN_STATUS           ##
+my $rsid = EASIH::DB::Conductor::insert_run_status($rid, "RUN STARTED");
+ok($rsid == -1, 'Insert run status');
 
+my $rs = EASIH::DB::Conductor::fetch_run_statuses($rid);
+ok($rs && $$rs[0][0] == $rid && $$rs[0][1] eq "RUN STARTED", 'fetched run_statuses');
+
+##           FILE_STATUS           ##
+my $fsid = EASIH::DB::Conductor::insert_file_status($fid, "QC STARTED");
+ok($fsid == -1, 'Insert file status');
+
+my $fs = EASIH::DB::Conductor::fetch_file_statuses($rid);
+ok($fs && $$fs[0][0] == $fid && $$fs[0][1] eq "QC STARTED", 'fetched file_statuses');
+
+
+##           FILE_STATUS           ##
+my $sasid = EASIH::DB::Conductor::insert_sample_analysis_status($sid, "MARIS STARTED");
+ok($sasid == -1, 'Insert file status');
+
+my $sas = EASIH::DB::Conductor::fetch_sample_analysis_statuses($sid);
+ok($sas && $$fs[0][0] == $sid && $$sas[0][1] eq "MARIS STARTED", 'fetched sample_analalysis_statuses');
+
+##           CRR_STATUS           ##
+
+my @r = (['1','ok',1], ['1','waiting',5]);
+
+ok( $sasid = EASIH::DB::Conductor::insert_sample_crr($sid, @r ), 
+    'Insert sample crr array_array');
+
+my $crrs = EASIH::DB::Conductor::fetch_sample_crr($sid);
+ok($crrs && $$crrs[0][0] == 1 , 'fetch sample crr array_array');
+
+ok(my $crrs = EASIH::DB::Conductor::delete_sample_crr($sid), 
+   'deleted sample crr entries');
+
+$crrs = EASIH::DB::Conductor::fetch_sample_crr($sid);
+ok($crrs && !$$crrs[0] , 'fetched empty sample crr array_array');
 
 # Delete the tmp database now when we are done with it.
 END {

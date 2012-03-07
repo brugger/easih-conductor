@@ -10,6 +10,7 @@ use warnings;
 use Data::Dumper;
 
 use Time::HiRes;
+use EASIH::Trace;
 use EASIH::DB;
 
 my $dbi;
@@ -119,7 +120,7 @@ sub insert_sample {
   my $sample_name = fetch_project_name($pid);
   
   if (! $sample_name ) {
-    print STDERR "Unknown pid: $pid\n";
+    print STDERR EASIH::Trace::Function() . " Unknown pid: $pid\n";
     return undef;
   }
 
@@ -180,7 +181,7 @@ sub insert_sequencer {
   my ($name, $platform) = @_;
   
   if (! $name || ! $platform) {
-    print STDERR "Sequencer needs both a name and a platform\n";
+    print STDERR EASIH::Trace::Function() . " Sequencer needs both a name and a platform\n";
     return undef;
   }
 
@@ -242,7 +243,7 @@ sub insert_run {
   my ($mid, $name) = @_;
   
   if (! $mid || ! $name) {
-    print STDERR "run needs both a name and a sequencer id (mid)\n";
+    print STDERR EASIH::Trace::Function() . " run needs both a name and a sequencer id (mid)\n";
     return undef;
   }
 
@@ -263,7 +264,7 @@ sub update_run {
   my ($rid, $mid, $name) = @_;
 
   if ( $rid ) {
-    print STDERR "rid missing in function call\n";
+    print STDERR EASIH::Trace::Function() . " rid missing in function call\n";
     return undef;
   }
 
@@ -280,9 +281,21 @@ sub update_run {
 # 
 # 
 # Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_file {
+  my ( $id ) = @_;
+  my $q = "SELECT * FROM file WHERE name = ?";
+  $q    = "SELECT * FROM file WHERE fid = ?" if ( $id =~ /^\d+\z/);
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return EASIH::DB::fetch_hash( $dbi, $sth, $id );
+}
+
+# 
+# 
+# 
+# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
 sub fetch_file_id {
   my ( $name ) = @_;
-  my $q    = "SELECT fid FROM sample WHERE name = ?";
+  my $q    = "SELECT fid FROM file WHERE name = ?";
   my $sth  = EASIH::DB::prepare($dbi, $q);
   my @line = EASIH::DB::fetch_array( $dbi, $sth, $name );
   return $line[0] || undef;
@@ -310,27 +323,27 @@ sub insert_file {
   my ($sid, $rid, $name) = @_;
 
   if (! $rid ) {
-    print STDERR "A rid was not provided\n";
+    print STDERR EASIH::Trace::Function() . " A rid was not provided\n";
     return undef;
   }
 
   if (! $sid ) {
-    print STDERR "A sid was not provided\n";
+    print STDERR EASIH::Trace::Function() . " A sid was not provided\n";
     return undef;
   }
 
   if (! $name ) {
-    print STDERR "A name was not provided\n";
+    print STDERR EASIH::Trace::Function() . " A name was not provided\n";
     return undef;
   }
 
   if (! fetch_sample_name($sid) ) {
-    print STDERR "$sid is not a known sid\n";
+    print STDERR EASIH::Trace::Function() . " $sid is not a known sid\n";
     return undef;
   }
 
   if (! fetch_run($rid) ) {
-    print STDERR "$rid is not a valid rid\n";
+    print STDERR EASIH::Trace::Function() . " $rid is not a valid rid\n";
     return undef;
   }
 
@@ -348,14 +361,13 @@ sub insert_file {
 sub update_file {
   my ($fid, $name) = @_;
 
-
-  if (! $fid ) {
-    print STDERR "A fid was not provided\n";
+  if (! $fid || ! $name ) {
+    print STDERR EASIH::Trace::Function() . " Both a file id (fid) and a new name is needed for updating a file entry\n";
     return undef;
   }
 
   if (! $name ) {
-    print STDERR "A name was not provided\n";
+    print STDERR EASIH::Trace::Function() . " A name was not provided\n";
     return undef;
   }
 
@@ -388,7 +400,7 @@ sub fetch_analysis {
   my ( $aid ) = @_;
   my $q    = "SELECT * FROM analysis where aid = ?";
   my $sth  = EASIH::DB::prepare($dbi, $q);
-  return ( EASIH::DB::fetch_hash( $dbi, $sth, $aid ) );
+  return  EASIH::DB::fetch_hash( $dbi, $sth, $aid );
 }
 
 
@@ -397,50 +409,157 @@ sub fetch_analysis {
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_analysis {
-  my ($reference, $pipeline) = @_;
+  my ($reference, $pipeline, $min_reads) = @_;
 
-  my @vars = fetch_analysis_id($reference, $pipeline);
-  return $vars[0] if ( @vars && $vars[0]);
+  my $aid = fetch_analysis_id($reference, $pipeline);
+  return $aid if ( $aid );
 
   my %call_hash = ( reference  => $reference,
-		    pipeline   => $pipeline);
+		    pipeline   => $pipeline,
+		    min_reads  => $min_reads);
 
   return (EASIH::DB::insert($dbi, "analysis", \%call_hash));
 }
 
 
 # 
-# Should validate if an entry already exists.
+# 
 # 
 # Kim Brugger (07 Feb 2012)
-sub insert_status {
+sub update_analysis {
+  my ($aid, $reference, $pipeline, $min_reads) = @_;
+
+  if (! $aid ) {
+    print STDERR EASIH::Trace::Function() . " A analysis id (aid) is needed for updating an analysis entry\n";
+    return undef;
+  }
+
+  my %call_hash;
+  $call_hash{aid}        = $aid;
+  $call_hash{reference}  = $reference if ($reference);
+  $call_hash{pipeline}   = $pipeline  if ($pipeline);
+  $call_hash{min_reads}  = $min_reads if ($min_reads);
+
+  return (EASIH::DB::update($dbi, "analysis", \%call_hash, "aid"));
+}
+
+
+# 
+# Should validate if an entry already exists.
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub insert_run_status {
+  my ($rid, $status) = @_;
+
+  my $run_name = fetch_sample_name($rid);
+  
+  if (! $run_name ) {
+    print STDERR EASIH::Trace::Function() . " Unknown rid: $rid\n";
+    return undef;
+  }
+
+
+  my $stamp = EASIH::DB::highres_timestamp();
+
+  my %call_hash = ( rid    => $rid,
+		    status => $status,
+		    stamp  => $stamp);
+
+  return (EASIH::DB::insert($dbi, "run_status", \%call_hash));
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_run_statuses {
+  my ( $rid ) = @_;
+  my $q    = "SELECT * FROM run_status where rid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @statuses = EASIH::DB::fetch_array_array( $dbi, $sth, $rid );
+  
+  @statuses = sort {$$b[2] <=> $$a[2]} @statuses;
+
+  return @statuses if ( wantarray );
+  return \@statuses;
+}
+
+
+
+# 
+# Should validate if an entry already exists.
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub insert_file_status {
+  my ($fid, $status) = @_;
+
+  my $file_name = fetch_file_name($fid);
+  
+  if (! $file_name ) {
+    print STDERR EASIH::Trace::Function() . " Unknown file id (fid): $fid\n";
+    return undef;
+  }
+
+
+  my $stamp = EASIH::DB::highres_timestamp();
+
+  my %call_hash = ( fid    => $fid,
+		    status => $status,
+		    stamp  => $stamp);
+
+  return (EASIH::DB::insert($dbi, "file_status", \%call_hash));
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_file_statuses {
+  my ( $fid ) = @_;
+  my $q    = "SELECT * FROM file_status where fid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @statuses = EASIH::DB::fetch_array_array( $dbi, $sth, $fid );
+  
+  @statuses = sort {$$b[2] <=> $$a[2]} @statuses;
+
+  return @statuses if ( wantarray );
+  return \@statuses;
+}
+
+
+
+# 
+# Should validate if an entry already exists.
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub insert_sample_analysis_status {
   my ($sid, $status) = @_;
 
   my $sample_name = fetch_sample_name($sid);
   
   if (! $sample_name ) {
-    print STDERR "Unknown sid: $sid\n";
+    print STDERR EASIH::Trace::Function() . " Unknown sid: $sid\n";
     return undef;
   }
 
 
-  my $stamp = Time::HiRes::gettimeofday()*100000;
+  my $stamp = EASIH::DB::highres_timestamp();
 
   my %call_hash = ( sid    => $sid,
 		    status => $status,
 		    stamp  => $stamp);
 
-  return (EASIH::DB::insert($dbi, "status", \%call_hash));
+  return (EASIH::DB::insert($dbi, "sample_analysis_status", \%call_hash));
 }
 
 
 # 
 # 
 # 
-# Kim Brugger (07 Feb 2012)
-sub fetch_statuses {
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sample_analysis_statuses {
   my ( $sid ) = @_;
-  my $q    = "SELECT * FROM status where sid = ?";
+  my $q    = "SELECT * FROM sample_analysis_status where sid = ?";
   my $sth  = EASIH::DB::prepare($dbi, $q);
   my @statuses = EASIH::DB::fetch_array_array( $dbi, $sth, $sid );
   
@@ -449,6 +568,77 @@ sub fetch_statuses {
   return @statuses if ( wantarray );
   return \@statuses;
 }
+
+
+
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sample_crr {
+  my ( $sid ) = @_;
+  my $q = "SELECT task, type, count FROM sample_crr where sid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  my @statuses = EASIH::DB::fetch_array_array( $dbi, $sth, $sid);
+  
+  @statuses = sort {$$b[1] cmp $$a[1]} @statuses;
+
+  return @statuses if ( wantarray );
+  return \@statuses;
+}
+
+
+
+# 
+# Should validate if an entry already exists.
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub insert_sample_crr {
+  my ($sid, @crr) = @_;
+
+  my $sample_name = fetch_sample_name($sid);
+  if (! $sample_name ) {
+    print STDERR EASIH::Trace::Function() . " Unknown sample id (sid): $sid\n";
+    return undef;
+  }
+
+  @crr = @{$crr[0]} if ( ref($crr[0][0]) eq 'ARRAY');
+
+  for( my $i = 0; $i < @crr; $i++ ) {
+    
+    my %call_hash = ( sid    => $sid,
+		      task   => $crr[$i][0],
+		      type   => $crr[$i][1],
+		      count  => $crr[$i][2]);
+
+    EASIH::DB::insert($dbi, "sample_crr", \%call_hash);
+
+  }
+  
+  return 1;
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012), contact: kim.brugger@easih.ac.uk
+sub delete_sample_crr {
+  my ($sid) = @_;
+
+  my $sample_name = fetch_sample_name($sid);
+  if (! $sample_name ) {
+    print STDERR EASIH::Trace::Function() . " Unknown sample id (sid): $sid\n";
+    return undef;
+  }
+
+  my $q = "DELETE FROM sample_crr WHERE sid = ?";
+  EASIH::DB::do($dbi, $q, $sid);
+}
+
 
 
 

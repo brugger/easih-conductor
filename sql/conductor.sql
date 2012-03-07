@@ -48,7 +48,7 @@ CREATE TABLE sequencer (
 
   mid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(100) NOT NULL UNIQUE,
-  platform            VARCHAR(50),  
+	  platform            VARCHAR(50),  
   center	      VARCHAR(50),   
 
   KEY name_idx (name)
@@ -85,6 +85,8 @@ CREATE TABLE sample_analysis_status (
   KEY fid_idx ( sid )
 );
 
+
+
 CREATE TABLE sample_crr (
   sid                INT NOT NULL,
   task 	             INT,
@@ -93,7 +95,4 @@ CREATE TABLE sample_crr (
 
   KEY fid_idx ( sid )
 );
-
-
-
 
