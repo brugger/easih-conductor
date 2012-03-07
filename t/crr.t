@@ -38,7 +38,7 @@ use lib '/home/kb468/easih-toolbox/modules/';
 use lib '/home/kb468/projects/conductor/modules';
 use EASIH::CRR;
 
-use Test::More tests => 12;
+use Test::More tests => 14;
 
 ok(EASIH::CRR::is_integer("tyt") == 0, 'Tested is_integer with a string');
 ok(EASIH::CRR::is_integer(2.2) == 0, 'Tested is_integer with a float');
@@ -78,3 +78,8 @@ $exp_report = "1..5
 
 ok($report eq $exp_report, 'expected failed run report is identical to generated report');
 
+my $crr_dump = EASIH::CRR::as_array_array();
+ok($crr_dump &&  $$crr_dump[1][1] eq "failed", 'array_array dump of crr structure is correct');
+
+$crr_dump = EASIH::CRR::as_array_hash();
+ok($crr_dump &&  $$crr_dump[2]{type} eq "ok", 'array_hash dump of crr structure is correct');

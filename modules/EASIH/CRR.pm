@@ -136,6 +136,51 @@ sub report {
 # 
 # 
 # 
+# Kim Brugger (07 Mar 2012)
+sub as_array_array {
+
+  my @res;
+
+  my $index = 0;
+  foreach my $task (sort {$a <=> $b } keys %statuses) {
+    
+    foreach my $type (sort keys %{$statuses{ $task}} ) {
+      $res[$index][0] = $task;
+      $res[$index][1] = $type;
+      $res[$index++][2] = $statuses{ $task }{ $type };
+    }
+  }
+
+  return @res if ( wantarray );
+  return \@res;
+}
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012)
+sub as_array_hash {
+
+  my @res;
+
+  my $index = 0;
+  foreach my $task (sort {$a <=> $b } keys %statuses) {
+    
+    foreach my $type (sort keys %{$statuses{ $task}} ) {
+      $res[$index]{task} = $task;
+      $res[$index]{type} = $type;
+      $res[$index++]{count} = $statuses{ $task }{ $type };
+    }
+  }
+
+  return @res if ( wantarray );
+  return \@res;
+}
+
+
+# 
+# 
+# 
 # Kim Brugger (29 Feb 2012)
 sub readin {
   my ($file) = @_;
