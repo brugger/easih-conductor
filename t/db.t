@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 
-use Test::Simple tests => 16;
+use Test::Simple tests => 19;
 
 use lib '/home/kb468/easih-toolbox/modules/';
 use lib '/home/kb468/projects/conductor/modules';
@@ -78,6 +78,16 @@ ok(ref($array_hash_ref) eq "ARRAY" && ref($$array_hash_ref[0]) eq "HASH" , 'ref 
 
 my @array_hash = EASIH::DB::fetch_array_hash($dbi, $sth, $id1);
 ok(@array_hash && ref($array_hash[0]) eq "HASH" , 'fetch_array_hash returns correct types' );
+
+my $timestamp = EASIH::DB::highres_timestamp();
+ok($timestamp , 'create a highres timestamp' );
+$timestamp = 133113657706274;
+my ($time, $micro) = EASIH::DB::split_highres_timestamp( $timestamp);
+ok( $time == 1331136577.06274 && $micro == 6274,  'split highres timestamp into normal time and micro seconds');
+
+$time = EASIH::DB::highres_timestamp2localtime( $timestamp);
+ok( $time eq "07/03/2012 16:09:37.06274",  'split highres timestamp into localtime');
+
 
 # Delete the tmp database now when we are done with it.
 END {

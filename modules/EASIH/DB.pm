@@ -8,6 +8,8 @@ package EASIH::DB;
 use strict;
 use warnings;
 use Data::Dumper;
+use Time::HiRes;
+use POSIX qw( strftime );
 
 use DBI;
 
@@ -232,7 +234,7 @@ sub update {
   my ($dbi, $table, $hash_ref, $condition_key)  = @_;
 
   my %columns;
-  map { $columns{$_} = 1 }get_column_names( $dbi, $table);
+  map { $columns{$_} = 1 } get_column_names( $dbi, $table);
 
   my $s = "UPDATE $table SET ";
 
@@ -255,6 +257,46 @@ sub update {
   $sth->execute  || die $DBI::errstr;;
 
   return $$hash_ref{$condition_key} || -1;
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012)
+sub highres_timestamp {
+  return Time::HiRes::gettimeofday()*100000;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012)
+sub split_highres_timestamp {
+  my ($highres) = @_;
+  
+  my $microsec = $highres % 100000;
+  $highres /= 100000;
+  
+  return( $highres, $microsec) if (wantarray );
+  return [$highres, $microsec];
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Mar 2012)
+sub highres_timestamp2localtime {
+  my ($highres) = @_;
+  my ($time, $microsec) = split_highres_timestamp($highres);
+  
+  
+  $time =  strftime("%d/%m/%Y %H:%M:%S", localtime( $time ));
+  return sprintf("%s.%05d", $time, $microsec);
 }
 
 
