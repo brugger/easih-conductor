@@ -22,7 +22,8 @@ sub offload_illumina_runs {
 
   my @illumina_dirs  = ('/seqs/illumina2/', 
 			'/seqs/illumina3/', 
-			'/seqs/illumina4/');
+			'/seqs/illumina4/', 
+			'/seqs/illumina5/');
 
   foreach my $illumina_dir ( @illumina_dirs ) {
     opendir(DIR, "$illumina_dir");
@@ -43,9 +44,9 @@ sub offload_illumina_runs {
     
       next if( !-e $eventfile && !-e $RTAcomp && !-e "$runfolder/Basecalling_Netcopy_complete.txt");
       my $finished_run = 0;
-      my $finished_run = 1 if (-e $RTAcomp && -e "$runfolder/Basecalling_Netcopy_complete.txt");
+      $finished_run = 1 if (-e $RTAcomp && -e "$runfolder/Basecalling_Netcopy_complete.txt");
       $finished_run = `grep -c "Copying logs to network run folder" $eventfile` 
-	  if (! $finished_run);
+	  if (! $finished_run && -e $eventfile);
       chomp( $finished_run );
       next if ( !$finished_run);
       
@@ -64,7 +65,7 @@ sub offload_torrent_runs {
 
   ### Fetch Data from iondb (located on Ion torrent) ###
   my $dbi = DBI->connect("DBI:Pg:dbname=iondb;host=mgion01.medschl.cam.ac.uk", 'ion') || die "Could not connect to database: $DBI::errstr";
-  my $q = 'select experiments.id, "fastqLink", "pgmName", "status", "chipType", "chipBarcode" from rundb_results results join rundb_experiment experiments on results.experiment_id = experiments.id where status = \'Completed\'';
+  my $q = 'select experiments.id, "fastqLink", "pgmName", "status", "chipType", "chipBarcode" from rundb_results results join rundb_experiment experiments on results.experiment_id = experiments.id where status = \'Completed\' order by experiments.id';
 
   my $sth = $dbi->prepare( $q );
   $sth->execute();
