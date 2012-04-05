@@ -48,7 +48,7 @@ use EASIH::Log;
 
 EASIH::Log::level("ALL");
 
-my $DEVELOPMENT = 1;
+my $DEVELOPMENT = 0;
 
 my %opts;
 getopts('r:d:o:', \%opts);
