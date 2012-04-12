@@ -59,13 +59,39 @@ sub fetch_project_name {
 # 
 # 
 # Kim Brugger (07 Feb 2012)
+sub fetch_project_hash {
+  my ( $sid ) = @_;
+  my $q    = "SELECT * FROM project where pid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return EASIH::DB::fetch_hash( $dbi, $sth, $sid );
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
+sub fetch_project_array {
+  my ( $sid ) = @_;
+  my $q    = "SELECT * FROM project where pid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+  return EASIH::DB::fetch_array( $dbi, $sth, $sid );
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (07 Feb 2012)
 sub insert_project {
-  my ($name) = @_;
+  my ($name, $notes) = @_;
 
   my $pid = fetch_project_id($name);
   return $pid if ($pid);
 
-  return (EASIH::DB::insert($dbi, "project", {name => $name}));
+  $notes ||= "";
+
+  return (EASIH::DB::insert($dbi, "project", {name => $name, notes => $notes}));
 }
 
 
@@ -74,11 +100,12 @@ sub insert_project {
 # 
 # Kim Brugger (07 Feb 2012)
 sub update_project {
-  my ($pid, $name) = @_;
+  my ($pid, $name, $notes) = @_;
 
   my %call_hash;
-  $call_hash{pid}    = $pid  if ($pid);
-  $call_hash{name}   = $name if ($name);
+  $call_hash{pid}    = $pid   if ($pid);
+  $call_hash{name}   = $name  if ($name);
+  $call_hash{notes}  = $notes if ($notes);
 
   return (EASIH::DB::update($dbi, "project", \%call_hash, "pid"));
 }

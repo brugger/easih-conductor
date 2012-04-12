@@ -5,6 +5,7 @@ CREATE TABLE project (
   pid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   aid                 INT,
   name                VARCHAR(3) NOT NULL UNIQUE,
+  notes		      TEXT,
 
   KEY name_idx (name)
 
