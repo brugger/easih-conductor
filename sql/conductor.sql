@@ -8,7 +8,15 @@ CREATE TABLE project (
   notes		      TEXT,
 
   KEY name_idx (name)
+);
 
+
+CREATE TABLE project_status (
+  pid                INT NOT NULL,
+  status	     VARCHAR(100),
+  stamp              BIGINT,
+
+  KEY pid_idx ( pid )
 );
 
 
@@ -58,6 +66,7 @@ CREATE TABLE sequencer (
 
 CREATE TABLE analysis (
   aid                INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  descr		     TEXT,
   reference	     VARCHAR(100),
   pipeline	     VARCHAR(100),
   min_reads          INT
@@ -83,7 +92,7 @@ CREATE TABLE sample_analysis_status (
   status	     VARCHAR(100),
   stamp              BIGINT,
 
-  KEY fid_idx ( sid )
+  KEY sid_idx ( sid )
 );
 
 
