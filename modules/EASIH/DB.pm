@@ -216,13 +216,13 @@ sub insert {
   my ($dbi, $table, $hash_ref)  = @_;
 
   my %columns;
-  map { $columns{$_} = 1 }get_column_names( $dbi, $table);
+  map { $columns{$_} = 1 } get_column_names( $dbi, $table);
 
   my (@keys, @params, @values);
   foreach my $key (keys %$hash_ref ) {
     
     if ( ! $columns{$key}) {
-      print "Column name '$key' is not present in the '$table' table\n";
+      print STDERR "Column name '$key' is not present in the '$table' table\n";
       return undef;
     }
     if ( $$hash_ref{ $key } ) {
@@ -235,9 +235,9 @@ sub insert {
   my $query = "INSERT INTO $table (" .join(",", @keys) .") VALUES (".join(",", @params).")";
   my $sth = prepare($dbi, $query);
   
-  $sth->execute(@values) || die $DBI::errstr;
-  
-  return $sth->{mysql_insertid} || -1;
+  my $execute_value = $sth->execute(@values) || die $DBI::errstr;
+
+  return $sth->{mysql_insertid} ||  -1;
 }
 
 

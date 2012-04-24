@@ -45,6 +45,16 @@ CREATE TABLE run (
   KEY name_idx (name)
 );
 
+CREATE TABLE sample_sheet (
+
+  rid                 INT NOT NULL,
+  lane		      INT, 
+  sample_name         VARCHAR(30) NOT NULL,
+  barcode 	      VARCHAR(20),
+  
+  KEY name_idx (sample_name)
+);
+
 CREATE TABLE sequencer (
 
   mid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

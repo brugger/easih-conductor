@@ -45,7 +45,7 @@ print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-use Test::More tests => 45;
+use Test::More tests => 52;
 
 my $dbhost = 'localhost';
 
@@ -212,13 +212,39 @@ ok( $sasid = EASIH::DB::Conductor::insert_sample_crr($sid, @r ),
 my $crrs = EASIH::DB::Conductor::fetch_sample_crr($sid);
 ok($crrs && $$crrs[0][0] == 1 , 'fetch sample crr array_array');
 
-ok(my $crrs = EASIH::DB::Conductor::delete_sample_crr($sid), 
+ok( $crrs = EASIH::DB::Conductor::delete_sample_crr($sid), 
    'deleted sample crr entries');
 
 $crrs = EASIH::DB::Conductor::fetch_sample_crr($sid);
 ok($crrs && !$$crrs[0] , 'fetched empty sample crr array_array');
 
+##         SAMPLE SHEETS          ##
+
+my $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( undef, 1, "Z990001");
+ok(!$ssid , 'insert sample_sheet_line w/ missing run id (rid)');
+ $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, undef, "Z990001");
+ok(!$ssid , 'insert sample_sheet_line w/ missing lane');
+ $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1);
+ok(!$ssid , 'insert sample_sheet_line w/ sample name');
+
+my $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1, "Z990001");
+ok($ssid == -1 , 'Inserted line into sample sheet wo/ barcode');
+$ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 2, "Z990002", "ACGT");
+ok($ssid == -1 , 'Inserted line into sample sheet w/ barcode');
+EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 2, "Z990003", "CAGT");
+EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 3, "Z990004", "GACT");
+EASIH::DB::Conductor::insert_sample_sheet_line( 5, 3, "Z990004", "GACT");
+
+my $array_ss = EASIH::DB::Conductor::fetch_sample_sheet_array($rid);
+my $hash_ss  = EASIH::DB::Conductor::fetch_sample_sheet_hash($rid);
+my $ss       = EASIH::DB::Conductor::fetch_sample_sheet($rid);
+
+ok($$array_ss[0][2] eq "Z990001" , 'Fetched correct array sample sheet');
+ok($$hash_ss[1]{'barcode'} eq "ACGT" , 'Fetched correct hash sample sheet');
+
+
 # Delete the tmp database now when we are done with it.
 END {
   EASIH::DB::drop_db($rand_dbname, $dbhost, "easih_admin", "easih");
 }
+
