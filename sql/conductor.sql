@@ -41,7 +41,8 @@ CREATE TABLE file (
   name                VARCHAR(50) NOT NULL ,
 
   KEY name_idx (name),
-  KEY sid_idx  (sid)
+  KEY sid_idx  (sid),
+  KEY rid_idx  (rid)
 );
 
 CREATE TABLE run (
@@ -57,7 +58,7 @@ CREATE TABLE sequencer (
 
   mid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(100) NOT NULL UNIQUE,
-	  platform            VARCHAR(50),  
+  platform            VARCHAR(50),  
   center	      VARCHAR(50),   
 
   KEY name_idx (name)
