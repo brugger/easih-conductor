@@ -304,10 +304,80 @@ sub update_run {
 }
 
 
+
+
 # 
 # 
 # 
-# Kim Brugger (06 Mar 2012), contact: kim.brugger@easih.ac.uk
+# Kim Brugger (07 Feb 2012)
+sub insert_sample_sheet_line {
+  my ($rid, $lane, $sample_name, $barcode) = @_;
+  
+  if (! $rid || !$lane || ! $sample_name) {
+    print STDERR EASIH::Trace::Function() . " run needs both a run id (rid), lane and a sample_name\n";
+    return undef;
+  }
+
+  my %call_hash = ( rid         => $rid,
+		    lane        => $lane,
+     		    sample_name => $sample_name,
+		    barcode     => $barcode);
+
+  return (EASIH::DB::insert($dbi, "sample_sheet", \%call_hash));
+}
+
+
+
+# 
+# A lot of hard coding in this one, do not like this...
+# 
+# Kim Brugger (24 Apr 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sample_sheet {
+  my ( $rid ) = @_;
+  my $q    = "SELECT * FROM sample_sheet WHERE rid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+
+
+  my @ss = EASIH::DB::fetch_array_array( $dbi, $sth, $rid );
+  my $res = "";
+  for(my $i=0;$i<@ss; $i++) {
+    $ss[$i][3] ||= "";
+    $res .= join("\t", @{$ss[$i]}[1..3]) . "\n";
+  }
+  
+  return $res;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (24 Apr 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sample_sheet_array {
+  my ( $rid ) = @_;
+  my $q    = "SELECT * FROM sample_sheet WHERE rid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+
+  return EASIH::DB::fetch_array_array( $dbi, $sth, $rid );
+}
+
+# 
+# 
+# 
+# Kim Brugger (24 Apr 2012), contact: kim.brugger@easih.ac.uk
+sub fetch_sample_sheet_hash {
+  my ( $rid ) = @_;
+  my $q    = "SELECT * FROM sample_sheet WHERE rid = ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+
+  return EASIH::DB::fetch_array_hash( $dbi, $sth, $rid );
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (24 Apr 2012), contact: kim.brugger@easih.ac.uk
 sub fetch_file {
   my ( $id ) = @_;
   my $q = "SELECT * FROM file WHERE name = ?";
