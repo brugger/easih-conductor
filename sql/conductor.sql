@@ -5,10 +5,11 @@ CREATE TABLE project (
   pid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   aid                 INT,
   name                VARCHAR(3) NOT NULL UNIQUE,
+  organism	      VARCHAR(200),	     
   notes		      TEXT,
+  contacts	      VARCHAR(200),
 
   KEY name_idx (name)
-
 );
 
 
@@ -59,7 +60,7 @@ CREATE TABLE sequencer (
 
   mid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(100) NOT NULL UNIQUE,
-	  platform            VARCHAR(50),  
+  platform            VARCHAR(50),  
   center	      VARCHAR(50),   
 
   KEY name_idx (name)

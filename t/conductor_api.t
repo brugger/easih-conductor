@@ -45,7 +45,7 @@ print "Database name :: $rand_dbname\n";
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-use Test::More tests => 52;
+use Test::More tests => 53;
 
 my $dbhost = 'localhost';
 
@@ -64,7 +64,7 @@ my $dbi = EASIH::DB::Conductor::connect($rand_dbname, $dbhost, "easih_admin", "e
 ok( $dbi, 'Created and Connect to test database');
 
 ##           PROJECT              ##
-my $pid = EASIH::DB::Conductor::insert_project("a99");
+my $pid = EASIH::DB::Conductor::insert_project("a99", "notes", 'tyt@tam.sd');
 ok($pid, 'Inserted a99 into project');
 
 $pid = EASIH::DB::Conductor::update_project($pid, "A99");
@@ -75,6 +75,9 @@ ok($fetched_pid == $pid, 'Fetched pid for A99 is correct');
 
 my $fetched_name = EASIH::DB::Conductor::fetch_project_name( $pid );
 ok($fetched_name eq "A99", 'Fetched project name by pid is correct');
+
+my $fetched_hash = EASIH::DB::Conductor::fetch_project_hash( $pid );
+ok($$fetched_hash{notes} eq "notes" && $$fetched_hash{contacts} eq 'tyt@tam.sd', 'Fetched project hash by pid contains the correct information');
 
 ##           SAMPLES              ##
 my $sid = EASIH::DB::Conductor::insert_sample($pid + 999, "a990001");
@@ -222,12 +225,12 @@ ok($crrs && !$$crrs[0] , 'fetched empty sample crr array_array');
 
 my $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( undef, 1, "Z990001");
 ok(!$ssid , 'insert sample_sheet_line w/ missing run id (rid)');
- $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, undef, "Z990001");
+$ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, undef, "Z990001");
 ok(!$ssid , 'insert sample_sheet_line w/ missing lane');
- $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1);
+$ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1);
 ok(!$ssid , 'insert sample_sheet_line w/ sample name');
 
-my $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1, "Z990001");
+$ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 1, "Z990001");
 ok($ssid == -1 , 'Inserted line into sample sheet wo/ barcode');
 $ssid = EASIH::DB::Conductor::insert_sample_sheet_line( $rid, 2, "Z990002", "ACGT");
 ok($ssid == -1 , 'Inserted line into sample sheet w/ barcode');

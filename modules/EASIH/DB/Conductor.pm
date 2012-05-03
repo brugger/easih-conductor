@@ -84,14 +84,16 @@ sub fetch_project_array {
 # 
 # Kim Brugger (07 Feb 2012)
 sub insert_project {
-  my ($name, $notes) = @_;
+  my ($name, $organism, $notes, $contacts) = @_;
 
   my $pid = fetch_project_id($name);
   return $pid if ($pid);
 
   $notes ||= "";
+  $contacts ||= "";
+  $organism ||= "";
 
-  return (EASIH::DB::insert($dbi, "project", {name => $name, notes => $notes}));
+  return (EASIH::DB::insert($dbi, "project", {name => $name, organism => $organism, notes => $notes, contacts => $contacts}));
 }
 
 
