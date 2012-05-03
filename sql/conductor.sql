@@ -5,19 +5,14 @@ CREATE TABLE project (
   pid                 INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   aid                 INT,
   name                VARCHAR(3) NOT NULL UNIQUE,
+  organism	      VARCHAR(200),	     
   notes		      TEXT,
+  contacts	      VARCHAR(200),
 
   KEY name_idx (name)
 );
 
 
-CREATE TABLE project_status (
-  pid                INT NOT NULL,
-  status	     VARCHAR(100),
-  stamp              BIGINT,
-
-  KEY pid_idx ( pid )
-);
 
 
 
@@ -81,6 +76,14 @@ CREATE TABLE analysis (
   reference	     VARCHAR(100),
   pipeline	     VARCHAR(100),
   min_reads          INT
+);
+
+CREATE TABLE project_status (
+  pid                INT NOT NULL,
+  status	     VARCHAR(100),
+  stamp              BIGINT,
+
+  KEY pid_idx ( pid )
 );
 
 
