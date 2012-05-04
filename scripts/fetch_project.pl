@@ -44,11 +44,12 @@ use lib '/home/kb468/projects/conductor/modules';
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-my $dbhost = 'mgpc17';
+my $dbhost = 'localhost';
 my $dbname = "conductor";
 my $dbi = EASIH::DB::Conductor::connect($dbname, $dbhost, "easih_admin", "easih");
 
 my $var = shift;
+
 
 if ( $var =~ /^\w\d{2}\z/) {
   my $pid = EASIH::DB::Conductor::fetch_project_id( $var);
@@ -60,4 +61,10 @@ if ( $var =~ /^\w\d{2}\z/) {
   else {
     print "Unknown project: $var\n";
   }
+}
+
+my @results = EASIH::DB::Conductor::seach_project($var);
+
+foreach my $fetched_hash ( @results ) {
+  print "$$fetched_hash{name}, $$fetched_hash{notes} :: contact(s) $$fetched_hash{contacts} :: organism $$fetched_hash{organism}\n";
 }

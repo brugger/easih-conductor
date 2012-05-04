@@ -44,7 +44,7 @@ use lib '/home/kb468/projects/conductor/modules';
 use EASIH::DB;
 use EASIH::DB::Conductor;
 
-my $dbhost = 'mgpc17';
+my $dbhost = 'localhost';
 my $dbname = "conductor";
 my $dbi = EASIH::DB::Conductor::connect($dbname, $dbhost, "easih_admin", "easih");
 

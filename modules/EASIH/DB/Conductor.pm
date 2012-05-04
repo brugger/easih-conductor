@@ -79,6 +79,21 @@ sub fetch_project_array {
 }
 
 
+
+
+# 
+# 
+# 
+# Kim Brugger (03 May 2012)
+sub seach_project {
+  my ($var) = @_;
+  $var = "%$var%";
+  my $q    = "SELECT * FROM project where name like ? OR organism like ? OR notes like ? OR contacts like ?";
+  my $sth  = EASIH::DB::prepare($dbi, $q);
+
+  return EASIH::DB::fetch_array_hash( $dbi, $sth, $var, $var, $var, $var );
+}
+
 # 
 # 
 # 
