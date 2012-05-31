@@ -58,6 +58,8 @@ sub sql_file {
   }
 }
 
+
+
 # 
 # 
 # 
@@ -69,6 +71,22 @@ sub connect {
 
   my $dbi = DBI->connect("DBI:mysql:$dbname:$dbhost", $db_user, $db_pass) || die "Could not connect to database: $DBI::errstr";
 
+  return $dbi;
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (31 May 2012)
+sub connect_psql {
+  my ($dbname, $dbhost, $db_user, $db_pass) = @_;
+  $dbhost  ||= "mgpc17";
+  $db_user ||= 'easih_ro';
+
+  my $dbi = DBI->connect("DBI:Pg:dbname=$dbname;host=$dbhost", $db_user) || die "Could not connect to database: $DBI::errstr";
+  
   return $dbi;
 }
 
@@ -113,6 +131,7 @@ sub fetch_array_hash {
 
   my $sth = $sql if ( $sql->isa("DBI::st"));
   $sth = $dbi->prepare( $sql ) if ( !$sth );
+  print "$sql\n";
   
   my @results;
 
@@ -279,6 +298,16 @@ sub update {
 # Kim Brugger (07 Mar 2012)
 sub highres_timestamp {
   return Time::HiRes::gettimeofday()*100000;
+}
+
+
+# 
+# 
+# 
+# Kim Brugger (04 May 2012)
+sub time2highres_timestamp {
+  my ($time) = @_;
+  return $time*100000;
 }
 
 
