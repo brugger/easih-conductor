@@ -52,9 +52,11 @@ CREATE TABLE run (
 CREATE TABLE sample_sheet (
 
   rid                 INT NOT NULL,
+  fid                 INT,
   lane		      INT, 
   sample_name         VARCHAR(30) NOT NULL,
   barcode 	      VARCHAR(20),
+
   
   KEY name_idx (sample_name)
 );
@@ -86,11 +88,39 @@ CREATE TABLE project_status (
   KEY pid_idx ( pid )
 );
 
+CREATE TABLE sample_status (
+  sid                INT NOT NULL,
+  status	     VARCHAR(100),
+  stamp              BIGINT,
+
+  KEY pid_idx ( sid )
+);
+
+
+-- insert into sample_statuses (
+--   ssid       INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+--   name       VARCHAR(100)
+-- ) AUTO_INCREMENT=10;
+
+-- insert into sample_statuses (name) VALUE ('RECEIVED SAMPLE'),
+-- ('SAMPLE QC'),
+-- ('LIBRARY DONE'),
+-- ('LIBRARY QC'),
+-- ('SEQUENCING DONE') 
+-- ('SEQUENCE QC DONE'),
+-- ('SEQUENCE QC STARTED'),
+-- ('SEQUENCE QC PASSED'),
+-- ('SEQUENCE QC FAILED'),
+-- ('PRIMARY ANALYSIS STARTED'),
+-- ('PRIMARY ANALYSIS DONE'),
+
 
 CREATE TABLE run_status (
   rid                INT NOT NULL,
   status	     VARCHAR(100),
-  stamp              BIGINT
+  stamp              BIGINT,
+
+  KEY pid_idx ( rid )
 );
 
 CREATE TABLE file_status (
