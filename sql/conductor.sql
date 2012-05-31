@@ -75,7 +75,6 @@ CREATE TABLE sequencer (
 CREATE TABLE analysis (
   aid                INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   descr		     TEXT,
-  reference	     VARCHAR(100),
   pipeline	     VARCHAR(100),
   min_reads          INT
 );
