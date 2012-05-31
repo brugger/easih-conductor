@@ -13,6 +13,7 @@ use POSIX qw( strftime );
 
 use DBI;
 
+
 # for caching table column names and queries
 my %table_columns;
 my %sth_hash;
@@ -86,6 +87,8 @@ sub connect_psql {
   $db_user ||= 'easih_ro';
 
   my $dbi = DBI->connect("DBI:Pg:dbname=$dbname;host=$dbhost", $db_user) || die "Could not connect to database: $DBI::errstr";
+
+#  $dbi->{TraceLevel} = 1; ## for debugging
   
   return $dbi;
 }
@@ -119,6 +122,7 @@ sub do {
   $sth = $dbi->prepare( $sql ) if ( !$sth );
   
   $sth->execute( @params ) || die "$DBI::errstr\n";
+  $sth = undef; # somethimes this is retained, I dont know why. Reset it just to be safe
   return 1;
 }
 
@@ -129,9 +133,9 @@ sub do {
 sub fetch_array_hash {
   my ($dbi, $sql, @params) = @_;
 
+  
   my $sth = $sql if ( $sql->isa("DBI::st"));
   $sth = $dbi->prepare( $sql ) if ( !$sth );
-  print "$sql\n";
   
   my @results;
 
@@ -141,6 +145,7 @@ sub fetch_array_hash {
     push @results, $result;
   }
 
+  $sth = undef;  # somethimes this is retained, I dont know why. Reset it just to be safe
   return @results if ( wantarray );
   return \@results;
 }
