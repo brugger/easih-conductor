@@ -24,20 +24,34 @@ foreach my $order (@orders ) {
 
   next if ( $$order{'label'} eq 'Cancelled' ||
 	    $$order{'label'} eq 'Completed');
-      
-  $$order{'label'} =~ s/\d+ - //;
 
-  print join("\t", 
-	     $$order{'order_id'},
-	     $$order{'tracking_id'},
-	     $$order{'order_name'},
-	     $$order{'num_samples'},
-	     $$order{'label'},
-	     $$order{'description'},) . "\n";
+  if (1) {
+    $$order{'label'} =~ s/\d+ - //;
 
-#  print join("\t", EASIH::LIMS::samples_in_order($$order{'order_id'})) . "\n";
+    print join("\t", 
+	       $$order{'order_id'},
+	       $$order{'tracking_id'},
+	       $$order{'order_name'},
+	       $$order{'num_samples'},
+	       $$order{'label'},
+	       $$order{'description'},) . "\n";
 
-  EASIH::LIMS::sample_statuses_from_order($$order{'order_id'});
+    print join("\t", EASIH::LIMS::samples_in_order($$order{'order_id'})) . "\n";
+  }
+
+#  EASIH::LIMS::sample_statuses_from_order($$order{'order_id'});
+  my $status = EASIH::LIMS::sample_statuses($$order{'order_id'});
+  foreach my $sample ( keys %$status ) {
+    if ( ref ($$status{$sample}) eq 'HASH' ) {
+      foreach my $sample_status ( sort { $$status{$sample}{$a} cmp $$status{$sample}{$b}} keys %{$$status{$sample}} ) {
+	print "$sample\t$sample_status\t$$status{$sample}{$sample_status}\n";
+      }
+    }
+    else {
+      print "$sample\t$$status{$sample}\n";
+    }
+  }
+  print Dumper();
 
 }
 

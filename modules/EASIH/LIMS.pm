@@ -23,8 +23,6 @@ BEGIN {
 }
 
 
-
-
 # 
 # 
 # 
@@ -39,7 +37,6 @@ sub fetch_orders {
 }
 
 
-
 # 
 # 
 # 
@@ -47,21 +44,41 @@ sub fetch_orders {
 sub sample_statuses_from_order {
   my ($order_id) = @_;
 
-  my $q = qq{SELECT name, status_label, state_label, gt.template_id FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
-
-  $q = 'SELECT log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?';
+  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
 
   my @db_res = EASIH::DB::fetch_array_hash($dbh, $q, $order_id);
 
-  die Dumper( "" );
-
+  my %samples;
   foreach my $db_res ( @db_res ) {
-    
-    my @template_ids = $$db_res{ 'template_id'};
-    die Dumper( \@template_ids );
-    
+    next if ( $$db_res{ state_label} ne "Ready");
+
+    my @template_ids = template_id2sample_ids($$db_res{ 'template_id'});
+    foreach my $template_id ( @template_ids ) {
+      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ workflow_label}/$$db_res{ status_label}" } = $$db_res{ created_at };
+    }
   }
  
+  return \%samples;
+
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (31 May 2012)
+sub sample_statuses {
+  my ($order_id) = @_;
+  my %samples_status;
+  # unrecieved samples does not have any status, so just setting them for all samples from active orders.
+  map { $samples_status{ $_ } = 'Waiting for sample'} EASIH::LIMS::samples_in_order( $order_id );
+  my $sample_statuses = sample_statuses_from_order( $order_id );
+  foreach my $sample ( keys %{$sample_statuses} ) {
+    $samples_status{ $sample } = $$sample_statuses{ $sample };
+  }
+  
+  return \%samples_status;
 }
 
 
