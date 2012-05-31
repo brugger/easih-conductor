@@ -40,7 +40,7 @@ foreach my $order (@orders ) {
   }
 
 #  EASIH::LIMS::sample_statuses_from_order($$order{'order_id'});
-  my $status = EASIH::LIMS::sample_statuses($$order{'order_id'});
+  my $status = EASIH::LIMS::sample_statuses($$order{'order_id'}, $$order{'label'});
   foreach my $sample ( keys %$status ) {
     if ( ref ($$status{$sample}) eq 'HASH' ) {
       foreach my $sample_status ( sort { $$status{$sample}{$a} cmp $$status{$sample}{$b}} keys %{$$status{$sample}} ) {

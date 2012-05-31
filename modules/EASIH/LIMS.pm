@@ -69,10 +69,11 @@ sub sample_statuses_from_order {
 # 
 # Kim Brugger (31 May 2012)
 sub sample_statuses {
-  my ($order_id) = @_;
+  my ($order_id, $order_status) = @_;
+  $order_status ||= 'Waiting for sample';
   my %samples_status;
   # unrecieved samples does not have any status, so just setting them for all samples from active orders.
-  map { $samples_status{ $_ } = 'Waiting for sample'} EASIH::LIMS::samples_in_order( $order_id );
+  map { $samples_status{ $_ } = $order_status } EASIH::LIMS::samples_in_order( $order_id );
   my $sample_statuses = sample_statuses_from_order( $order_id );
   foreach my $sample ( keys %{$sample_statuses} ) {
     $samples_status{ $sample } = $$sample_statuses{ $sample };
