@@ -22,10 +22,16 @@ my @orders = EASIH::LIMS::fetch_orders( );
 
 foreach my $order (@orders ) {
 
-  next if ( $$order{'label'} eq 'Cancelled' ||
-	    $$order{'label'} eq 'Completed');
+#  next if ( $$order{'label'} eq 'Cancelled' ||
+#	    $$order{'label'} eq 'Completed');
 
-  if (1) {
+
+#  next if ( $$order{'order_id'} != 42 );
+
+  print Dumper( $order );
+  next;
+
+  if (0) {
     $$order{'label'} =~ s/\d+ - //;
 
     print join("\t", 

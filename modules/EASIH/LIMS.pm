@@ -18,6 +18,7 @@ BEGIN {
 ### Fetch Data from iondb (located on Ion torrent) ###
 #my $dbh = DBI->connect("DBI:Pg:dbname=finch;host=mgeasihlims.medschl.cam.ac.uk", 'easih_ro') || die "Could not connect to database: $DBI::errstr";
 #  $dbh = DBI->connect("DBI:Pg:dbname=finch;host=easihlims2.medschl.cam.ac.uk", 'easih_ro', '') || die "Could not connect to database: $DBI::errstr";
+#  $dbh = EASIH::DB::connect_psql('finch','mgeasihlims.medschl.cam.ac.uk', 'easih_ro');
   $dbh = EASIH::DB::connect_psql('finch','easihlims2.medschl.cam.ac.uk', 'easih_ro');
   $dbh->do("SET search_path TO finch, public");
 }
@@ -29,7 +30,9 @@ BEGIN {
 # Kim Brugger (30 May 2012)
 sub fetch_orders {
   
-  my $q = 'select omo.order_id, tracking_id, order_name, ose.label, ost.label, ost.description, oos.num_samples from om_order_state ose, om_order_status ost, om_order_stats oos, om_order omo where ose.state_id = omo.state_id and ost.status_id = omo.status_id and oos.order_id = omo.order_id;';
+#  my $q = 'select omo.order_id, tracking_id, order_name, ose.label, ost.label, ost.description, oos.num_samples from om_order_state ose, om_order_status ost, om_order_stats oos, om_order omo where ose.state_id = omo.state_id and ost.status_id = omo.status_id and oos.order_id = omo.order_id;';
+
+  my $q = 'select omo.order_id, tracking_id, order_name, oos.num_samples from om_order omo, om_order_stats oos where oos.order_id = omo.order_id;';
   
   my @res = EASIH::DB::fetch_array_hash($dbh, $q);
   
