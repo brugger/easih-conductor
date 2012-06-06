@@ -28,22 +28,24 @@ foreach my $order (@orders ) {
 
 #  next if ( $$order{'order_id'} != 42 );
 
-  print Dumper( $order );
-  next;
+  my ($order_status, $state_stamp) = EASIH::LIMS::order_status( $$order{'order_id'} );
 
-  if (0) {
-    $$order{'label'} =~ s/\d+ - //;
+  $order_status =~ s/\d+ - //;
+
+
+  if (1) {
 
     print join("\t", 
 	       $$order{'order_id'},
-	       $$order{'tracking_id'},
 	       $$order{'order_name'},
 	       $$order{'num_samples'},
-	       $$order{'label'},
-	       $$order{'description'},) . "\n";
+	       $$order{'order_state'},
+	       $order_status,) . "\n";
 
     print join("\t", EASIH::LIMS::samples_in_order($$order{'order_id'})) . "\n";
   }
+
+  next;
 
 #  EASIH::LIMS::sample_statuses_from_order($$order{'order_id'});
   my $status = EASIH::LIMS::sample_statuses($$order{'order_id'}, $$order{'label'});

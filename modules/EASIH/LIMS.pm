@@ -32,11 +32,32 @@ sub fetch_orders {
   
 #  my $q = 'select omo.order_id, tracking_id, order_name, ose.label, ost.label, ost.description, oos.num_samples from om_order_state ose, om_order_status ost, om_order_stats oos, om_order omo where ose.state_id = omo.state_id and ost.status_id = omo.status_id and oos.order_id = omo.order_id;';
 
-  my $q = 'select omo.order_id, tracking_id, order_name, oos.num_samples from om_order omo, om_order_stats oos where oos.order_id = omo.order_id;';
+#  my $q = 'select omo.order_id, tracking_id, order_name, ose.label, sta.label, sta.description, oos.num_samples from om_order_state ose, status sta, om_order_stats oos, om_order omo where ose.state_id = omo.state_id and sta.status_id = omo.status_id and oos.order_id = omo.order_id;';
+
+  my $q = 'select omo.order_id, order_name, oos.num_samples, oo_state.label as order_state, omo.status_id from om_order omo, om_order_stats oos, om_order_state oo_state where oos.order_id = omo.order_id AND omo.state_id=oo_state.state_id;';
   
   my @res = EASIH::DB::fetch_array_hash($dbh, $q);
   
   return @res;
+}
+
+
+
+# 
+# 
+# 
+# Kim Brugger (06 Jun 2012)
+sub order_status {
+  my ( $order_id ) = @_;
+
+#  my $q = 'select order_id, label, new_order_status_id, change_time from om_order_state_log oosl, om_order_status oos where oosl.order_id = ? AND oosl.new_order_status_id = oos.status_id order by change_time limit 1;';
+
+  my $q = 'select label, change_time from om_order_state_log oosl, om_order_status oos where oosl.order_id = ? AND oosl.new_order_status_id = oos.status_id order by change_time DESC limit 1;';
+
+  my @res = EASIH::DB::fetch_array_array($dbh, $q, $order_id);
+  
+  return @{$res[0]} if ( $res[0]);
+  return ("","");
 }
 
 
