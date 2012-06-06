@@ -68,19 +68,22 @@ sub order_status {
 sub sample_statuses_from_order {
   my ($order_id) = @_;
 
-  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
+  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE state_label = 'Ready' AND wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
 
   my @db_res = EASIH::DB::fetch_array_hash($dbh, $q, $order_id);
 
   my %samples;
   foreach my $db_res ( @db_res ) {
-    next if ( $$db_res{ state_label} ne "Ready");
+#    print Dumper( $db_res );
+#    next if ( $$db_res{ state_label} ne "Ready");
 
     my @template_ids = template_id2sample_ids($$db_res{ 'template_id'});
+#    print "Template ID: $$db_res{ 'template_id'} --> @template_ids\n";
     foreach my $template_id ( @template_ids ) {
-      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ workflow_label}/$$db_res{ status_label}" } = $$db_res{ created_at };
+      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ workflow_label}" } = $$db_res{ created_at };
     }
   }
+  
  
   return \%samples;
 
@@ -99,6 +102,7 @@ sub sample_statuses {
   # unrecieved samples does not have any status, so just setting them for all samples from active orders.
   map { $samples_status{ $_ } = $order_status } EASIH::LIMS::samples_in_order( $order_id );
   my $sample_statuses = sample_statuses_from_order( $order_id );
+#  print Dumper( $sample_statuses );
   foreach my $sample ( keys %{$sample_statuses} ) {
     $samples_status{ $sample } = $$sample_statuses{ $sample };
   }
@@ -116,7 +120,15 @@ sub template_id2sample_ids {
   my ( $template_id ) = @_;
 
   my $q = 'select related_to from ga_template_hierarchy where template_id = ? and depth = (select max(depth) from ga_template_hierarchy where template_id = ?)';
-  return EASIH::DB::fetch_array($dbh, $q, $template_id,$template_id);
+
+  my @tmp =  EASIH::DB::fetch_array_array($dbh, $q, $template_id, $template_id);
+  my @res;
+  foreach my $tmp_res ( @tmp ) {
+    push @res, $$tmp_res[0];
+  }
+  
+  return @res;
+  
 }
 
 

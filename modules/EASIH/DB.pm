@@ -169,6 +169,7 @@ sub fetch_array_array {
     push @results, \@result_array;
   }
 
+  $sth = undef;  # somethimes this is retained, I dont know why. Reset it just to be safe
   return @results if ( wantarray );
   return \@results;
 }
@@ -188,6 +189,7 @@ sub fetch_array {
   
   my @results = $sth->fetchrow_array();
 
+  $sth = undef;  # somethimes this is retained, I dont know why. Reset it just to be safe
   return @results if ( wantarray );
   return \@results;
 }
@@ -207,6 +209,7 @@ sub fetch_hash {
 
   my $result = $sth->fetchrow_hashref();
 
+  $sth = undef;  # somethimes this is retained, I dont know why. Reset it just to be safe
   return %$result if ( defined $result && wantarray );
   return $result;
 }
