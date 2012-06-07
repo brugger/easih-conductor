@@ -68,7 +68,9 @@ sub order_status {
 sub sample_statuses_from_order {
   my ($order_id) = @_;
 
-  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE state_label = 'Ready' AND wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
+#  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE state_label = 'Ready' AND wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
+
+  my $q = qq{SELECT  name, workflow_label, status_label,  state_label, gt.template_id, wl.created_at FROM workflow_log wl, ga_template_workflow_log gtwl, ga_template gt WHERE  wl.log_id = gtwl.log_id AND gt.template_id = gtwl.template_id AND wl.log_id IN (select log_id FROM ga_template_workflow_log gtwl, om_order_ga_template oogt WHERE gtwl.template_id = oogt.template_id AND oogt.order_id = ?)};
 
   my @db_res = EASIH::DB::fetch_array_hash($dbh, $q, $order_id);
 
@@ -80,7 +82,8 @@ sub sample_statuses_from_order {
     my @template_ids = template_id2sample_ids($$db_res{ 'template_id'});
 #    print "Template ID: $$db_res{ 'template_id'} --> @template_ids\n";
     foreach my $template_id ( @template_ids ) {
-      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ workflow_label}" } = $$db_res{ created_at };
+#      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ workflow_label}" } = $$db_res{ created_at };
+      $samples{ sample_id2sample_name( $template_id ) }{ "$$db_res{ status_label}" } = $$db_res{ created_at };
     }
   }
   
