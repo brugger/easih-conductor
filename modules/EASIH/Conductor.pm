@@ -8,9 +8,16 @@ package EASIH::Conductor;
 use strict;
 use warnings;
 use Data::Dumper;
+use File::stat;
 
 use EASIH::DB::Conductor;
 use EASIH::Log;
+
+BEGIN {
+  my $dbhost = 'localhost';
+  my $dbname = "conductor";
+  my $dbi = EASIH::DB::Conductor::connect($dbname, $dbhost, "easih_admin", "easih");
+}
 
 
 # 
@@ -50,7 +57,33 @@ sub offload_illumina_runs {
       chomp( $finished_run );
       next if ( !$finished_run);
       
+
+      my $rid = EASIH::DB::Conductor::fetch_run_id( $run_dir );
+      if ( ! $rid ) {
+	print "Unknown run: $run_dir\n";
+	next;
+      }
+      
+      my @statuses = EASIH::DB::Conductor::fetch_run_statuses($rid);
+      my $tagged_as_finished = 0;
+      foreach my $status ( @statuses) {
+
+	if ( $$status[1] eq "FINISHED") {
+	  $tagged_as_finished = 1;
+	}
+      }
+
+      next if ($tagged_as_finished);
+
+
       EASIH::Log::write("$runfolder contains a finished run, should offload it\n", "TRACE");
+
+      my $filename = $eventfile if ( -e $eventfile );
+      $filename = $RTAcomp if ( -e $RTAcomp );
+      my $sb = stat($filename);
+      # use the timestamp of filename to determine a more fine grained  finishing time. Could just use a time() call.
+      EASIH::DB::Conductor::insert_run_status($rid, "FINISHED", EASIH::DB::time2highres_timestamp($sb->ctime)+30);
+
     }
   }
 }
@@ -72,9 +105,122 @@ sub offload_torrent_runs {
 
   while (my @results = $sth->fetchrow_array()) {
     my ($id, $fq_file, $pgmName, $status, $chipType, $chipBarcode ) = @results;
-    EASIH::Log::write("$id mgion01:/results/analysis/$fq_file contains a '$status' run from a $chipType ($chipBarcode) on machine $pgmName, should offload it\n", "TRACE");
+
+    my $rid = EASIH::DB::Conductor::fetch_run_id( $chipBarcode );
+
+    if ( ! $rid ) {
+      my $mid = EASIH::DB::Conductor::fetch_sequencer_id( $pgmName );
+      $rid = EASIH::DB::Conductor::insert_run( $mid, $chipBarcode );
+    }
+
+    my @statuses = EASIH::DB::Conductor::fetch_run_statuses($rid);
+    my $tagged_as_finished = 0;
+    foreach my $status ( @statuses) {
+      
+      if ( $$status[1] eq "FINISHED") {
+	$tagged_as_finished = 1;
+      }
+    }
+    
+    next if ($tagged_as_finished);
+    
+    EASIH::Log::write("$id/$chipBarcode/$fq_file contains a '$status' run a $chipType () from $pgmName, should offload it\n", "TRACE");
+
+    next if ( $chipBarcode ne "aa0089122");
+    print "Fetching sample sheet for runid: $chipBarcode/aa0089122\n";
+    
+    # use the timestamp of filename to determine a more fine grained  finishing time. Could just use a time() call.
+    EASIH::DB::Conductor::insert_run_status($rid, "FINISHED", EASIH::DB::highres_timestamp());
+    
+    my $sample_sheet = fetch_and_store_sample_sheet($rid, $chipBarcode );
+
+    system "./runners/offload_torrent.pl -d -s $sample_sheet -r $chipBarcode";
+
   }
 }
+
+
+# 
+# 
+# 
+# Kim Brugger (21 May 2012)
+sub fetch_and_store_sample_sheet {
+  my ($rid, $run_name ) = @_;
+
+  use EASIH::LIMS;
+  use EASIH::Sample;
+
+  my $ss_fn = "/scratch/kb468/sample_sheet.$run_name.csv";
+  open(my $ss_fh, "> $ss_fn") || die "Could not open file: $!\n";
+  print $ss_fh join("\t", "Lane", "Name", "Barcode") . "\n";
+
+  my @lims_sample_sheet = EASIH::LIMS::fetch_by_runname( $run_name );
+  my @conductor_sample_sheet = EASIH::DB::Conductor::fetch_sample_sheet_hash( $rid );
+  my %conductor_sample_sheet;
+  if ( @conductor_sample_sheet ) {
+    EASIH::Log::write( "Sample sheet already exists for '$rid'\n", "WARN");
+    foreach my $entry ( @conductor_sample_sheet ) {
+      $conductor_sample_sheet{ $$entry{ lane }}{ $$entry{ sample_name }} = $$entry{ barcode     };
+      $conductor_sample_sheet{ $$entry{ lane }}{ $$entry{ barcode     }} = $$entry{ sample_name };
+    }
+  }
+
+  foreach my $entry ( @lims_sample_sheet ) {
+    my ($lane, $sample, $mid) = @$entry;
+
+    if (@conductor_sample_sheet) {
+      if ( $conductor_sample_sheet{ $lane }{ $sample } eq $mid ) {
+	next;
+      }
+      else {
+	EASIH::Log::write( "conductor and LIMS samplesheet disagree for rid:$rid, lane:$lane, sample:$sample disagree. conductor mid: $conductor_sample_sheet{ $lane }{ $sample }, lims mid: $mid\nThis needs to be manually resolved!! \n", "ERROR");
+	next;
+      }
+    }
+    
+    if (! EASIH::Sample::validate_sample($sample)) {
+      EASIH::Log::write("invalid sample name '$sample' in LIMS for run: $run_name\n", "ERROR");
+      next;
+    }
+
+    my $project = EASIH::Sample::extract_project( $sample );
+    my $pid = EASIH::DB::Conductor::fetch_project_id( $project );
+
+    # This should not happen, but there is no reason to kill off a sample sheet offloading by this. Should probably send some email around to notify people of this!
+    $pid = EASIH::DB::Conductor::insert_project( $project ) 
+	if ( ! $project );
+
+    my $sid = EASIH::DB::Conductor::insert_sample( $pid, $sample );
+
+    my $base_filename = $sample;
+
+    # check to see if files has already been created for this sample; If it has create a sample_name, with the next _version
+    my @file_entries = EASIH::DB::Conductor::fetch_files_from_sample( $sid );
+    if ( @file_entries ) {
+      my @files;
+      foreach my $file_entry ( @file_entries ) {
+	push @files, $$file_entry{name};
+      }
+      $base_filename = EASIH::Sample::next_sample_name($sample, \@files);
+    }
+
+    ($base_filename, my $error) = EASIH::Sample::sample2outfilename( $base_filename);
+    
+    if ( $error ) {
+      EASIH::Log::write("Sample name creation error: $error\n", "ERROR");
+      next;
+    }
+      
+    my $fid = EASIH::DB::Conductor::insert_file($sid, $rid, $base_filename);
+
+    EASIH::DB::Conductor::insert_sample_sheet_line($rid, $lane, $sample, $mid, $fid);
+    print $ss_fh join("\t", $lane, $base_filename, $mid) . "\n";
+  }
+  close ( $ss_fh );
+  
+  return( $ss_fn );
+}
+
 
 
 # 
